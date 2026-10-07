@@ -1,0 +1,2112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Friday — Academic Control Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #111827;
+      --card-border: #1f2937;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* HEADER */
+    header {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      font-size: 0.7rem;
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary);
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    .user-select-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(31, 41, 55, 0.6);
+      padding: 0.2rem 0.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .user-select {
+      background: transparent;
+      color: var(--text);
+      border: none;
+      font-family: var(--font-main);
+      font-size: 0.85rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .live-clock {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      background: rgba(31, 41, 55, 0.6);
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 0.55rem 1.15rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: var(--font-main);
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    .btn-secondary {
+      background: rgba(31, 41, 55, 0.8);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(55, 65, 81, 0.8);
+      box-shadow: none;
+    }
+
+    .btn-accent {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      border: none;
+    }
+
+    .btn-accent:hover {
+      opacity: 0.95;
+      box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);
+    }
+
+    .btn-sync {
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 0.4rem 0.85rem;
+      font-size: 0.8rem;
+    }
+
+    .btn-sync:hover {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: rgba(99, 102, 241, 0.5);
+      color: #fff;
+    }
+
+    .btn-sync:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .last-sync-badge {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: rgba(31, 41, 55, 0.5);
+      padding: 0.4rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+    }
+
+    .spin {
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* CONTAINER & METRICS */
+    main {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      transition: border-color 0.2s;
+    }
+
+    .metric-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    .metric-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--text);
+      font-family: var(--font-mono);
+    }
+
+    /* TABS */
+    .tabs-nav {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 2rem;
+      padding-bottom: 0.25rem;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.65rem 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      font-family: var(--font-main);
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+      background: rgba(31, 41, 55, 0.4);
+    }
+
+    .tab-btn.active {
+      color: #fff;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* TIMETABLE GRID */
+    .timetable-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .day-column {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .day-header {
+      background: rgba(31, 41, 55, 0.5);
+      padding: 0.85rem 1.25rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .day-header.today {
+      background: rgba(99, 102, 241, 0.2);
+      border-bottom-color: rgba(99, 102, 241, 0.3);
+      color: #fff;
+    }
+
+    .day-slots {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-height: 120px;
+    }
+
+    .slot-card {
+      background: rgba(17, 24, 39, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      transition: all 0.2s;
+    }
+
+    .slot-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      background: rgba(31, 41, 55, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .slot-time {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .slot-code {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .slot-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .no-classes {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 2rem 0;
+      font-style: italic;
+    }
+
+    /* DEADLINES / EVENTS */
+    .events-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .events-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .event-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.2s;
+      flex-wrap: wrap;
+    }
+
+    .event-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    .event-info {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .event-badge {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-midterm {
+      background: rgba(155, 89, 182, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(155, 89, 182, 0.3);
+    }
+
+    .badge-final {
+      background: rgba(231, 76, 60, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(231, 76, 60, 0.3);
+    }
+
+    .badge-quiz {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-assignment {
+      background: rgba(6, 182, 212, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+
+    .event-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .event-sub {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .countdown-badge {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      background: rgba(31, 41, 55, 0.6);
+      border: 1px solid var(--card-border);
+      white-space: nowrap;
+    }
+
+    .action-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-action {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 0.35rem 0.65rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .btn-action:hover {
+      color: #fff;
+      border-color: rgba(99, 102, 241, 0.4);
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .btn-action.btn-test-alert:hover {
+      color: #38bdf8;
+      border-color: rgba(6, 182, 212, 0.4);
+      background: rgba(6, 182, 212, 0.1);
+    }
+
+    .btn-action.btn-delete:hover {
+      color: #ef4444;
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* INGESTION PORTAL */
+    .import-hero {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.08));
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .import-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .import-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .import-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .import-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(99, 102, 241, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      color: var(--primary);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .drop-zone {
+      border: 2px dashed var(--card-border);
+      border-radius: 14px;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: rgba(17, 24, 39, 0.4);
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.08);
+    }
+
+    .bookmark-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: linear-gradient(135deg, #4f46e5, #0891b2);
+      color: #fff;
+      padding: 0.85rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: grab;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .bookmark-pill:active {
+      cursor: grabbing;
+    }
+
+    .step-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .step-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+    }
+
+    .step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(99, 102, 241, 0.2);
+      color: var(--primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* TABLE / LOGS */
+    .table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background: rgba(31, 41, 55, 0.5);
+      padding: 0.85rem 1.25rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    td {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.4);
+      font-size: 0.9rem;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .log-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    .log-sent {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .log-failed {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      max-width: 500px;
+      width: 100%;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .form-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .form-input, .form-select {
+      background: rgba(17, 24, 39, 0.8);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 0.65rem 0.9rem;
+      border-radius: 8px;
+      font-family: var(--font-main);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus, .form-select:focus {
+      border-color: var(--primary);
+    }
+
+    /* PASSCODE LOCK GATE */
+    .lock-gate {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg);
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .lock-gate.active {
+      display: flex;
+    }
+
+    .lock-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 420px;
+      padding: 2.5rem;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    .lock-icon {
+      width: 64px;
+      height: 64px;
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary);
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 1.25rem;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    /* TOAST */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast {
+      background: #1f2937;
+      color: #fff;
+      border: 1px solid var(--card-border);
+      padding: 0.85rem 1.25rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      animation: slideIn 0.25s ease-out;
+    }
+
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--danger); }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PASSCODE LOCK GATE -->
+  <div id="lockGate" class="lock-gate">
+    <div class="lock-card">
+      <div class="lock-icon">🔒</div>
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.4rem;">FRIDAY Dashboard Protected</h2>
+      <p style="color:var(--text-muted); font-size:0.875rem; margin-bottom:1.5rem;">Enter your passcode to access your academic schedule.</p>
+      <form onsubmit="handleUnlock(event)">
+        <div class="form-group" style="margin-bottom:1rem;">
+          <input type="password" id="gatePasscodeInput" class="form-input" placeholder="Enter Passcode" style="text-align:center; font-size:1.1rem; letter-spacing:0.1em;" required autofocus>
+        </div>
+        <div id="lockErrorMsg" style="color:var(--danger); font-size:0.8rem; margin-bottom:1rem; display:none;">Incorrect passcode. Please try again.</div>
+        <button type="submit" class="btn" style="width:100%; justify-content:center; padding:0.8rem;">Unlock Dashboard</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">F</div>
+      <div>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span class="brand-title">Friday</span>
+          <span class="brand-badge">Academic Dashboard</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <!-- Multi-Tenant Student Switcher -->
+      <div class="user-select-wrap" title="Switch active student profile">
+        <span style="font-size:0.9rem;">👤</span>
+        <select id="userProfileSelector" class="user-select" onchange="handleUserSwitch(this.value)">
+          <option value="1">Student #1</option>
+        </select>
+      </div>
+
+      <div id="lastSyncBadge" class="last-sync-badge">
+        <span>🔄</span>
+        <span style="color:var(--text-muted);">Synced:</span>
+        <span id="lastSyncText">Loading...</span>
+      </div>
+      <button id="btnSyncSchedule" class="btn btn-sync" onclick="handleSyncSchedule(event)" title="One-click schedule sync from raw portal data">
+        <span id="syncIcon">⚡</span>
+        <span id="syncText">Sync Schedule</span>
+      </button>
+      <div id="liveClock" class="live-clock">--:--:-- BST</div>
+      <div id="statusPill" class="status-pill">
+        <span class="status-dot"></span>
+        <span id="statusText">System Ready</span>
+      </div>
+      <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="triggerTestPing(event)">
+        ⚡ Test Alert
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main>
+    <!-- METRICS -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-label">Enrolled Courses</span>
+        <span id="metricCourses" class="metric-value">--</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Weekly Class Slots</span>
+        <span id="metricSlots" class="metric-value">--</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Academic Deadlines</span>
+        <span id="metricEvents" class="metric-value">--</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Discord Alerts Sent</span>
+        <span id="metricLogs" class="metric-value">--</span>
+      </div>
+    </div>
+
+    <!-- TABS NAVIGATION -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('timetable', event)">
+        📅 Weekly Timetable
+      </button>
+      <button class="tab-btn" onclick="switchTab('deadlines', event)">
+        📝 Academic Deadlines
+      </button>
+      <button class="tab-btn" onclick="switchTab('import', event)">
+        📥 Import Schedule
+      </button>
+      <button class="tab-btn" onclick="switchTab('logs', event)">
+        📡 Dispatch History
+      </button>
+      <button class="tab-btn" onclick="switchTab('settings', event)">
+        ⚙️ Settings & Bot Config
+      </button>
+    </div>
+
+    <!-- TAB 1: WEEKLY TIMETABLE -->
+    <div id="tab-timetable" class="tab-content active">
+      <div class="timetable-grid" id="timetableGrid">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- TAB 2: ACADEMIC DEADLINES -->
+    <div id="tab-deadlines" class="tab-content">
+      <div class="events-toolbar">
+        <h2 style="font-size: 1.15rem; font-weight: 700;">Upcoming Deadlines & Exams</h2>
+        <button class="btn" onclick="openAddEventModal()">
+          <span>+</span> Add Custom Task
+        </button>
+      </div>
+      <div class="events-list" id="eventsList">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- TAB 3: INGESTION PORTAL (PHASE 5) -->
+    <div id="tab-import" class="tab-content">
+      <div class="import-hero">
+        <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.35rem;">📥 BRACU Connect Ingestion Portal</h2>
+        <p style="color:var(--text-muted); font-size:0.92rem; line-height:1.5;">
+          Connect your BRACU course schedule to your Discord account. Run <code style="color:var(--accent); font-family:var(--font-mono); font-weight:700;">/start</code> on Discord with <strong>@FRIDAY</strong> to generate your unique pairing code.
+        </p>
+      </div>
+
+      <!-- Pairing Code Input Card -->
+      <div class="import-card" style="margin-bottom:1.5rem;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label" style="font-size:0.95rem; font-weight:700; color:#fff;">
+            🔑 Enter Your Personal Pairing Code
+          </label>
+          <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+            <input type="text" id="importPairingCode" class="form-input" placeholder="e.g. BRC-A7F92B or DEFAULT1" style="font-family:var(--font-mono); font-size:1.1rem; text-transform:uppercase; max-width:320px;" required>
+            <span style="font-size:0.82rem; color:var(--text-muted);">Obtain by running <code style="color:var(--accent);">/start</code> on Discord.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ingestion Options Grid -->
+      <div class="import-grid">
+        <!-- Option A: File Upload -->
+        <div class="import-card">
+          <div class="import-card-header">
+            <div class="import-card-icon">📁</div>
+            <div>
+              <h3 style="font-size:1.1rem; font-weight:700;">Option A: File Upload</h3>
+              <p style="color:var(--text-muted); font-size:0.85rem;">Upload saved <code style="color:var(--accent);">schedule_raw.json</code></p>
+            </div>
+          </div>
+
+          <div id="fileDropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
+            <div style="font-size:2.2rem; margin-bottom:0.5rem;">📄</div>
+            <div style="font-weight:600; font-size:0.95rem; margin-bottom:0.25rem;">Click or Drag & Drop <code style="color:var(--accent);">schedule_raw.json</code> here</div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">Supports standard BRACU advising JSON exports</div>
+            <input type="file" id="fileInput" accept=".json,application/json" style="display:none" onchange="handleFileSelected(event)">
+          </div>
+
+          <div id="selectedFileInfo" style="display:none; padding:0.6rem 0.85rem; border-radius:8px; background:rgba(99, 102, 241, 0.1); border:1px solid rgba(99, 102, 241, 0.25); font-size:0.85rem;">
+            Selected: <strong id="selectedFileName" style="color:#fff;">--</strong> (<span id="selectedFileSize">--</span>)
+          </div>
+
+          <button id="btnUploadSchedule" class="btn" style="justify-content:center; padding:0.75rem;" onclick="handleUploadFile()" disabled>
+            <span>🚀</span> Ingest & Link Schedule
+          </button>
+        </div>
+
+        <!-- Option B: Faculty Consultation Schedules -->
+        <div class="import-card" style="display:flex; flex-direction:column; gap:1.25rem;">
+          <div class="import-card-header">
+            <div class="import-card-icon">👨‍🏫</div>
+            <div>
+              <h3 style="font-size:1.1rem; font-weight:700;">Option B: Faculty Consultation Schedules</h3>
+              <p style="color:var(--text-muted); font-size:0.85rem;">Look up office hours or register faculty consultation slots</p>
+            </div>
+          </div>
+
+          <!-- Instant Live Search Bar -->
+          <div>
+            <label class="form-label" style="font-size:0.85rem; font-weight:700; margin-bottom:0.35rem; color:#fff;">
+              🔍 Search Faculty Office Hours
+            </label>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <input type="text" id="consultationSearchInput" class="form-input" placeholder="Enter faculty initial (e.g. MSI, TSM, SHH)..." style="font-family:var(--font-mono); text-transform:uppercase; font-size:0.95rem;" oninput="handleConsultationSearch(this.value)">
+              <button class="btn btn-secondary" style="padding:0.6rem 1rem;" onclick="handleConsultationSearch(document.getElementById('consultationSearchInput').value)">Search</button>
+            </div>
+          </div>
+
+          <!-- Live Results Container -->
+          <div id="consultationSearchResults" style="display:none; max-height:220px; overflow-y:auto; border-radius:12px; background:rgba(17, 24, 39, 0.6); border:1px solid var(--card-border); padding:0.75rem;">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <div style="border-top:1px solid var(--card-border); margin:0.1rem 0;"></div>
+
+          <!-- Quick Form to submit / update consultation slots -->
+          <div>
+            <div style="font-weight:700; font-size:0.95rem; color:#fff; margin-bottom:0.6rem;">
+              ➕ Add / Update Consultation Slot
+            </div>
+            <form id="consultationForm" onsubmit="handleSaveConsultation(event)" style="display:flex; flex-direction:column; gap:0.65rem;">
+              <div style="display:grid; grid-template-columns:1fr 1.6fr; gap:0.6rem;">
+                <div>
+                  <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Initial *</label>
+                  <input type="text" id="consultInitial" class="form-input" placeholder="e.g. MSI" required style="font-family:var(--font-mono); text-transform:uppercase; padding:0.45rem 0.65rem; font-size:0.85rem;">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Faculty Name</label>
+                  <input type="text" id="consultName" class="form-input" placeholder="e.g. Md. Saiful Islam" style="padding:0.45rem 0.65rem; font-size:0.85rem;">
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.6rem;">
+                <div>
+                  <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Day *</label>
+                  <select id="consultDay" class="form-select" required style="padding:0.45rem 0.65rem; font-size:0.85rem;">
+                    <option value="SUNDAY">Sunday</option>
+                    <option value="MONDAY">Monday</option>
+                    <option value="TUESDAY">Tuesday</option>
+                    <option value="WEDNESDAY">Wednesday</option>
+                    <option value="THURSDAY">Thursday</option>
+                    <option value="FRIDAY">Friday</option>
+                    <option value="SATURDAY">Saturday</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Start Time *</label>
+                  <input type="time" id="consultStartTime" class="form-input" required style="padding:0.45rem 0.5rem; font-size:0.85rem;">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">End Time *</label>
+                  <input type="time" id="consultEndTime" class="form-input" required style="padding:0.45rem 0.5rem; font-size:0.85rem;">
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1.3fr; gap:0.6rem;">
+                <div>
+                  <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Room / Location</label>
+                  <input type="text" id="consultRoom" class="form-input" placeholder="e.g. UB0821" style="padding:0.45rem 0.65rem; font-size:0.85rem;">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Meeting Link (Online)</label>
+                  <input type="url" id="consultLink" class="form-input" placeholder="https://meet.google.com/..." style="padding:0.45rem 0.65rem; font-size:0.85rem;">
+                </div>
+              </div>
+
+              <div>
+                <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Faculty Email</label>
+                <input type="email" id="consultEmail" class="form-input" placeholder="e.g. saiful.islam@bracu.ac.bd" style="padding:0.45rem 0.65rem; font-size:0.85rem;">
+              </div>
+
+              <button type="submit" id="btnSaveConsultation" class="btn" style="justify-content:center; padding:0.6rem; margin-top:0.3rem;">
+                💾 Save Consultation Slot
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Import Feedback Card -->
+      <div id="importFeedbackCard" style="display:none; background:var(--card-bg); border:1px solid var(--success); border-radius:16px; padding:1.5rem 2rem;">
+        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+          <span style="font-size:1.5rem;">🎉</span>
+          <h3 id="importFeedbackTitle" style="font-size:1.15rem; font-weight:700; color:var(--success);">Schedule Ingested Successfully!</h3>
+        </div>
+        <p id="importFeedbackMsg" style="color:var(--text); font-size:0.9rem; line-height:1.6; margin-bottom:1rem;"></p>
+        <div id="importFeedbackDetails" style="font-size:0.85rem; color:var(--text-muted); background:rgba(31, 41, 55, 0.5); padding:1rem; border-radius:10px; font-family:var(--font-mono);"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: DISPATCH HISTORY -->
+    <div id="tab-logs" class="tab-content">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Target Event / Routine</th>
+              <th>Alert Offset</th>
+              <th>Dispatched Time (BST)</th>
+            </tr>
+          </thead>
+          <tbody id="logsTableBody">
+            <!-- Rendered dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 5: SETTINGS & BOT CONFIG -->
+    <div id="tab-settings" class="tab-content">
+      <div class="settings-container" style="max-width:800px; display:flex; flex-direction:column; gap:1.5rem;">
+        <!-- Discord Notification Settings -->
+        <div class="settings-card" style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:16px; padding:2rem;">
+          <div class="settings-card-header" style="margin-bottom:1.5rem;">
+            <h3 class="settings-card-title" style="font-size:1.15rem; font-weight:700; margin-bottom:0.3rem;">🤖 Discord DM Notification Profile</h3>
+            <p class="settings-card-desc" style="color:var(--text-muted); font-size:0.875rem;">Configure your Discord account so FRIDAY can deliver personalized class routines and exam alarms directly to your DMs.</p>
+          </div>
+          <form id="settingsForm" onsubmit="handleSaveSettings(event)">
+            <div class="form-group">
+              <label class="form-label">Student Name / Handle</label>
+              <input type="text" id="settingUserName" class="form-input" placeholder="e.g. Test Student" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Discord User ID (Snowflake)</label>
+              <input type="text" id="settingDiscordUserId" class="form-input" placeholder="e.g. 1328051283080380559" style="font-family:var(--font-mono);" required>
+              <span style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">Right-click your profile in Discord with Developer Mode enabled and click "Copy User ID".</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Dashboard Protection Passcode</label>
+              <input type="password" id="settingPasscode" class="form-input" placeholder="Leave empty to keep dashboard unlocked">
+              <span style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">Optional security gate. Leave empty to disable passcode protection.</span>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
+              <button type="submit" class="btn">Save Profile Settings</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ADD / EDIT DEADLINE MODAL -->
+  <div id="eventModal" class="modal-overlay">
+    <div class="modal-box">
+      <h3 id="eventModalTitle" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem;">Add Academic Deadline</h3>
+      <form id="eventForm" onsubmit="handleSaveEvent(event)">
+        <input type="hidden" id="editingEventId" value="">
+        <div class="form-group">
+          <label class="form-label">Associated Course</label>
+          <select class="form-select" id="eventCourseId">
+            <option value="">General / No Specific Course</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Event Type</label>
+          <select class="form-select" id="eventType" required>
+            <option value="QUIZ">Quiz / Class Test</option>
+            <option value="ASSIGNMENT">Assignment / Project Due</option>
+            <option value="MAKEUP">Makeup Class</option>
+            <option value="LAB_TASK">Lab Task / Evaluation</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Title / Description</label>
+          <input type="text" class="form-input" id="eventTitle" placeholder="e.g. Quiz 2 on Graph Theory" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Due / Start Date & Time (Dhaka Time: BST)</label>
+          <input type="datetime-local" class="form-input" id="eventStartTime" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Room / Link (Optional)</label>
+          <input type="text" class="form-input" id="eventRoom" placeholder="e.g. 08H-22C or Google Meet">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeEventModal()">Cancel</button>
+          <button type="submit" class="btn" id="eventSubmitBtn">Save Deadline</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    let activeUserId = parseInt(localStorage.getItem('friday_active_user_id') || '1', 10);
+    let cachedCourses = [];
+    let cachedEvents = [];
+    let selectedFileContent = null;
+
+    // Live clock in Asia/Dhaka
+    function updateClock() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Dhaka', hour12: false });
+      const dateStr = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Dhaka', day: '2-digit', month: 'short' });
+      document.getElementById('liveClock').textContent = `${dateStr}, ${timeStr} BST`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span>${type === 'success' ? '✅' : '⚠️'}</span><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function switchTab(tabId, ev) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      const tabBtns = Array.from(document.querySelectorAll('.tab-btn'));
+      const matchingBtn = tabBtns.find(b => b.getAttribute('onclick')?.includes(`'${tabId}'`));
+      if (matchingBtn) matchingBtn.classList.add('active');
+      else if (ev && ev.currentTarget) ev.currentTarget.classList.add('active');
+
+      const target = document.getElementById(`tab-${tabId}`);
+      if (target) target.classList.add('active');
+
+      if (tabId === 'settings') loadSettings();
+    }
+
+    // Modal helpers
+    function openAddEventModal() {
+      document.getElementById('editingEventId').value = '';
+      document.getElementById('eventModalTitle').textContent = 'Add Academic Deadline';
+      document.getElementById('eventSubmitBtn').textContent = 'Save Deadline';
+      document.getElementById('eventForm').reset();
+      document.getElementById('eventModal').classList.add('active');
+    }
+
+    function openEditEventModal(ev) {
+      document.getElementById('editingEventId').value = ev.id;
+      document.getElementById('eventModalTitle').textContent = 'Edit Academic Deadline';
+      document.getElementById('eventSubmitBtn').textContent = 'Update Deadline';
+
+      document.getElementById('eventCourseId').value = ev.course_id || '';
+      document.getElementById('eventType').value = ev.type || 'QUIZ';
+      document.getElementById('eventTitle').value = ev.title || '';
+      document.getElementById('eventRoom').value = ev.room || '';
+
+      if (ev.start_time) {
+        const d = new Date(ev.start_time);
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Dhaka',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+        const parts = formatter.formatToParts(d);
+        const m = {};
+        for (const p of parts) m[p.type] = p.value;
+        const hour = m.hour === '24' ? '00' : m.hour;
+        document.getElementById('eventStartTime').value = `${m.year}-${m.month}-${m.day}T${hour}:${m.minute}`;
+      }
+
+      document.getElementById('eventModal').classList.add('active');
+    }
+
+    function closeEventModal() {
+      document.getElementById('eventModal').classList.remove('active');
+    }
+
+    // Security Gate check
+    async function checkAuthGate() {
+      try {
+        const res = await fetch(`/api/settings?user_id=${activeUserId}`);
+        const json = await res.json();
+        if (json.success && json.data.has_passcode) {
+          const isAuthed = sessionStorage.getItem('friday_authenticated') === '1';
+          if (!isAuthed) {
+            document.getElementById('lockGate').classList.add('active');
+            return false;
+          }
+        }
+        document.getElementById('lockGate').classList.remove('active');
+        return true;
+      } catch (err) {
+        console.error('Auth gate check error:', err);
+        return true;
+      }
+    }
+
+    async function handleUnlock(e) {
+      e.preventDefault();
+      const input = document.getElementById('gatePasscodeInput');
+      const errEl = document.getElementById('lockErrorMsg');
+      try {
+        const res = await fetch('/api/auth/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ passcode: input.value })
+        });
+        const json = await res.json();
+        if (json.success && json.verified) {
+          sessionStorage.setItem('friday_authenticated', '1');
+          document.getElementById('lockGate').classList.remove('active');
+          loadDashboard();
+        } else {
+          errEl.style.display = 'block';
+          input.value = '';
+          input.focus();
+        }
+      } catch (err) {
+        errEl.textContent = 'Server connection error.';
+        errEl.style.display = 'block';
+      }
+    }
+
+    // Load initial data
+    async function loadDashboard() {
+      const authorized = await checkAuthGate();
+      if (!authorized) return;
+
+      await Promise.all([
+        loadUsers(),
+        loadStatus(),
+        loadCourses(),
+        loadRoutine(),
+        loadEvents(),
+        loadLogs(),
+        loadSettings()
+      ]);
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/users');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          const sel = document.getElementById('userProfileSelector');
+          sel.innerHTML = '';
+          json.data.forEach(u => {
+            const isSel = u.id === activeUserId ? 'selected' : '';
+            const codeTag = u.pairing_code ? ` [${u.pairing_code}]` : '';
+            sel.innerHTML += `<option value="${u.id}" ${isSel}>User #${u.id} (${u.courses_count} courses)${codeTag}</option>`;
+          });
+
+          // Pre-fill pairing code in import tab if active user has one
+          const current = json.data.find(u => u.id === activeUserId);
+          if (current && current.pairing_code) {
+            const pInput = document.getElementById('importPairingCode');
+            if (pInput && !pInput.value) pInput.value = current.pairing_code;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load users:', err);
+      }
+    }
+
+    function handleUserSwitch(newId) {
+      activeUserId = parseInt(newId, 10);
+      localStorage.setItem('friday_active_user_id', String(activeUserId));
+      showToast(`Switched active profile to User #${activeUserId}`);
+      loadDashboard();
+    }
+
+    function formatSyncTime(isoStr) {
+      if (!isoStr) return 'Never';
+      const d = new Date(isoStr);
+      const now = new Date();
+      const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
+      if (diffSec < 60) return 'Just now';
+      if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+      if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+      return d.toLocaleDateString('en-GB', {
+        timeZone: 'Asia/Dhaka',
+        day: '2-digit',
+        month: 'short'
+      }) + ' ' + d.toLocaleTimeString('en-GB', {
+        timeZone: 'Asia/Dhaka',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+
+    async function handleSyncSchedule(e) {
+      if (e) e.preventDefault();
+      const btn = document.getElementById('btnSyncSchedule');
+      const icon = document.getElementById('syncIcon');
+      const text = document.getElementById('syncText');
+
+      btn.disabled = true;
+      icon.classList.add('spin');
+      icon.textContent = '🔄';
+      text.textContent = 'Syncing...';
+
+      try {
+        const res = await fetch('/api/sync', { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: activeUserId })
+        });
+        const json = await res.json();
+        if (json.success) {
+          const stats = json.data;
+          showToast(`Schedule synced! (${stats.coursesInserted} courses, ${stats.routineSlotsInserted} slots)`);
+          const syncTextEl = document.getElementById('lastSyncText');
+          if (syncTextEl) syncTextEl.textContent = 'Just now';
+          await Promise.all([
+            loadStatus(),
+            loadRoutine(),
+            loadEvents(),
+            loadCourses()
+          ]);
+        } else {
+          showToast('Sync failed: ' + json.error, 'error');
+        }
+      } catch (err) {
+        showToast('Sync network error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        icon.classList.remove('spin');
+        icon.textContent = '⚡';
+        text.textContent = 'Sync Schedule';
+      }
+    }
+
+    async function loadStatus() {
+      try {
+        const res = await fetch(`/api/status?user_id=${activeUserId}`);
+        const json = await res.json();
+        if (json.success) {
+          const d = json.data;
+          document.getElementById('metricCourses').textContent = d.coursesCount;
+          document.getElementById('metricSlots').textContent = d.routineSlotsCount;
+          document.getElementById('metricEvents').textContent = d.eventsCount;
+          document.getElementById('metricLogs').textContent = d.notificationsSent;
+
+          const syncText = document.getElementById('lastSyncText');
+          if (syncText) {
+            syncText.textContent = formatSyncTime(d.last_synced_at || d.lastSync);
+          }
+
+          const pill = document.getElementById('statusPill');
+          const text = document.getElementById('statusText');
+          if (d.botConfigured) {
+            pill.style.background = 'rgba(16, 185, 129, 0.1)';
+            pill.style.color = '#10b981';
+            text.textContent = 'Discord Active';
+          } else {
+            pill.style.background = 'rgba(245, 158, 11, 0.1)';
+            pill.style.color = '#f59e0b';
+            text.textContent = 'Configure Discord';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load status:', err);
+      }
+    }
+
+    async function loadCourses() {
+      try {
+        const res = await fetch(`/api/courses?user_id=${activeUserId}`);
+        const json = await res.json();
+        if (json.success) {
+          cachedCourses = json.data;
+          const select = document.getElementById('eventCourseId');
+          select.innerHTML = '<option value="">General / No Specific Course</option>';
+          json.data.forEach(c => {
+            select.innerHTML += `<option value="${c.id}">${c.code} (Sec ${c.section}) - ${c.name || 'Enrolled'}</option>`;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load courses:', err);
+      }
+    }
+
+    async function loadRoutine() {
+      try {
+        const res = await fetch(`/api/routine?user_id=${activeUserId}`);
+        const json = await res.json();
+        if (json.success) {
+          const grid = document.getElementById('timetableGrid');
+          grid.innerHTML = '';
+          const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY'];
+          const todayStr = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Dhaka', weekday: 'long' }).format(new Date()).toUpperCase();
+
+          days.forEach(day => {
+            const slots = json.data.grouped[day] || [];
+            const isToday = day === todayStr;
+
+            let slotsHtml = '';
+            if (slots.length === 0) {
+              slotsHtml = `<div class="no-classes">No scheduled classes</div>`;
+            } else {
+              slots.forEach(s => {
+                slotsHtml += `
+                  <div class="slot-card">
+                    <div class="slot-time">${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}</div>
+                    <div class="slot-code">${s.code} <span style="font-size:0.8rem; font-weight:600; color:var(--text-muted);">(Sec ${s.section})</span></div>
+                    <div class="slot-meta">
+                      <div class="meta-row"><span>📍 Room:</span> <strong style="color:#fff;">${s.room || 'TBA'}</strong></div>
+                      <div class="meta-row"><span>👨‍🏫 Faculty:</span> <span>${s.faculty || 'N/A'}</span></div>
+                    </div>
+                  </div>
+                `;
+              });
+            }
+
+            grid.innerHTML += `
+              <div class="day-column">
+                <div class="day-header ${isToday ? 'today' : ''}">
+                  <span>${day}</span>
+                  ${isToday ? '<span style="font-size:0.7rem; font-weight:800; background:#6366f1; color:#fff; padding:0.15rem 0.45rem; border-radius:4px;">TODAY</span>' : ''}
+                </div>
+                <div class="day-slots">${slotsHtml}</div>
+              </div>
+            `;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load routine:', err);
+      }
+    }
+
+    // Helper: Returns YYYY-MM-DD for a date in Asia/Dhaka (+06:00)
+    function getDhakaDateString(dateObjOrIso) {
+      const d = new Date(dateObjOrIso);
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Dhaka',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(d);
+    }
+
+    async function loadEvents() {
+      try {
+        const res = await fetch(`/api/events?user_id=${activeUserId}`);
+        const json = await res.json();
+        if (json.success) {
+          cachedEvents = json.data;
+          const list = document.getElementById('eventsList');
+          list.innerHTML = '';
+          if (json.data.length === 0) {
+            list.innerHTML = '<div class="no-classes">No upcoming events or exams recorded.</div>';
+            return;
+          }
+
+          const now = new Date();
+          const todayStr = getDhakaDateString(now);
+          const todayMidnight = new Date(`${todayStr}T00:00:00+06:00`).getTime();
+
+          json.data.forEach(ev => {
+            const eventDateStr = getDhakaDateString(ev.start_time);
+            const eventMidnight = new Date(`${eventDateStr}T00:00:00+06:00`).getTime();
+            const diffDays = Math.round((eventMidnight - todayMidnight) / 86400000);
+
+            let countdownText = '';
+            let badgeStyle = '';
+            if (diffDays === 0) {
+              countdownText = 'Today';
+              badgeStyle = 'background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-weight: 700;';
+            } else if (diffDays === 1) {
+              countdownText = 'Tomorrow';
+              badgeStyle = 'background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 700;';
+            } else if (diffDays > 1) {
+              countdownText = `in ${diffDays} days`;
+              badgeStyle = 'color: var(--accent);';
+            } else if (diffDays === -1) {
+              countdownText = 'Yesterday';
+              badgeStyle = 'color: var(--text-muted); opacity: 0.7;';
+            } else {
+              countdownText = `${Math.abs(diffDays)} days ago`;
+              badgeStyle = 'color: var(--text-muted); opacity: 0.7;';
+            }
+
+            let badgeClass = 'badge-assignment';
+            if (ev.type === 'MIDTERM') badgeClass = 'badge-midterm';
+            else if (ev.type === 'FINAL') badgeClass = 'badge-final';
+            else if (ev.type === 'QUIZ') badgeClass = 'badge-quiz';
+
+            const dateFmt = new Date(ev.start_time).toLocaleDateString('en-GB', {
+              timeZone: 'Asia/Dhaka',
+              weekday: 'short',
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            });
+            const timeFmt = new Date(ev.start_time).toLocaleTimeString('en-GB', {
+              timeZone: 'Asia/Dhaka',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            });
+
+            // Action buttons for custom tasks
+            const actionButtons = ev.is_custom ? `
+              <div class="action-btn-group">
+                <button class="btn-action btn-test-alert" title="Dispatch test alert to Discord" onclick="handleTestEventAlert(${ev.id}, '${ev.title.replace(/'/g, "\\'")}')">
+                  🔔 Test
+                </button>
+                <button class="btn-action" title="Edit Deadline" onclick='openEditEventModal(${JSON.stringify(ev)})'>
+                  ✏️ Edit
+                </button>
+                <button class="btn-action btn-delete" title="Delete Deadline" onclick="handleDeleteEvent(${ev.id}, '${ev.title.replace(/'/g, "\\'")}')">
+                  🗑️
+                </button>
+              </div>
+            ` : `
+              <div class="action-btn-group">
+                <button class="btn-action btn-test-alert" title="Dispatch test alert to Discord" onclick="handleTestEventAlert(${ev.id}, '${ev.title.replace(/'/g, "\\'")}')">
+                  🔔 Test
+                </button>
+              </div>
+            `;
+
+            list.innerHTML += `
+              <div class="event-card">
+                <div class="event-info">
+                  <span class="event-badge ${badgeClass}">${ev.type}</span>
+                  <div>
+                    <div class="event-title">${ev.title}</div>
+                    <div class="event-sub">
+                      <span>🗓️ ${dateFmt} at ${timeFmt}</span>
+                      <span>📍 ${ev.room || 'TBA'}</span>
+                      ${ev.course_code ? `<span>📘 ${ev.course_code}</span>` : ''}
+                    </div>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                  <span class="countdown-badge" style="${badgeStyle}">${countdownText}</span>
+                  ${actionButtons}
+                </div>
+              </div>
+            `;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load events:', err);
+      }
+    }
+
+    async function loadLogs() {
+      try {
+        const res = await fetch(`/api/logs?user_id=${activeUserId}`);
+        const json = await res.json();
+        if (json.success) {
+          const tbody = document.getElementById('logsTableBody');
+          tbody.innerHTML = '';
+          if (json.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:2rem;">No notifications dispatched yet.</td></tr>';
+            return;
+          }
+
+          json.data.forEach(log => {
+            const isSent = log.status === 'SENT';
+            const dateStr = new Date(log.sentAt).toLocaleString('en-GB', {
+              timeZone: 'Asia/Dhaka',
+              day: '2-digit',
+              month: 'short',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            });
+
+            tbody.innerHTML += `
+              <tr>
+                <td><span class="log-badge ${isSent ? 'log-sent' : 'log-failed'}">${log.status}</span></td>
+                <td><strong>${log.label}</strong></td>
+                <td><code style="color:var(--accent); font-family:var(--font-mono);">${log.notificationType}</code></td>
+                <td>${dateStr} BST</td>
+              </tr>
+            `;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load logs:', err);
+      }
+    }
+
+    async function loadSettings() {
+      try {
+        const res = await fetch(`/api/settings?user_id=${activeUserId}`);
+        const json = await res.json();
+        if (json.success) {
+          const d = json.data;
+          document.getElementById('settingUserName').value = d.user_name || '';
+          document.getElementById('settingDiscordUserId').value = d.discord_user_id || '';
+          const passInput = document.getElementById('settingPasscode');
+          if (d.has_passcode) {
+            passInput.placeholder = '•••••••• (Passcode is active — enter new value to change or leave empty to keep)';
+          } else {
+            passInput.placeholder = 'Leave empty to keep dashboard unlocked';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      }
+    }
+
+    async function handleSaveSettings(e) {
+      e.preventDefault();
+      const user_name = document.getElementById('settingUserName').value.trim();
+      const discord_user_id = document.getElementById('settingDiscordUserId').value.trim();
+      const passcode = document.getElementById('settingPasscode').value;
+
+      const payload = { user_name, discord_user_id, user_id: activeUserId };
+      if (passcode.trim() !== '') {
+        payload.passcode = passcode.trim();
+      }
+
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.success) {
+          showToast('Settings saved successfully!');
+          await loadStatus();
+          await loadSettings();
+        } else {
+          showToast('Failed to save settings: ' + json.error, 'error');
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, 'error');
+      }
+    }
+
+    async function handleSaveEvent(e) {
+      e.preventDefault();
+      const editingId = document.getElementById('editingEventId').value;
+      const course_id = document.getElementById('eventCourseId').value || null;
+      const type = document.getElementById('eventType').value;
+      const title = document.getElementById('eventTitle').value;
+      const start_time = document.getElementById('eventStartTime').value;
+      const room = document.getElementById('eventRoom').value;
+
+      const url = editingId ? `/api/events/${editingId}` : '/api/events';
+      const method = editingId ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: activeUserId, course_id, type, title, start_time, room })
+        });
+        const json = await res.json();
+        if (json.success) {
+          closeEventModal();
+          document.getElementById('eventForm').reset();
+          showToast(editingId ? 'Event updated successfully.' : 'Deadline added successfully.');
+          await loadDashboard();
+        } else {
+          showToast(json.error, 'error');
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, 'error');
+      }
+    }
+
+    async function handleDeleteEvent(id, title) {
+      if (!confirm(`Are you sure you want to remove "${title}"?`)) return;
+      try {
+        const res = await fetch(`/api/events/${id}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.success) {
+          showToast('Deadline removed.');
+          await loadDashboard();
+        } else {
+          showToast(json.error, 'error');
+        }
+      } catch (err) {
+        showToast('Failed to delete event: ' + err.message, 'error');
+      }
+    }
+
+    async function handleTestEventAlert(id, title) {
+      showToast(`Dispatching alert for "${title}"...`);
+      try {
+        const res = await fetch(`/api/events/${id}/test-alert`, { method: 'POST' });
+        const json = await res.json();
+        if (json.success) {
+          showToast(json.message);
+          await loadLogs();
+          await loadStatus();
+        } else {
+          showToast(json.error, 'error');
+        }
+      } catch (err) {
+        showToast('Failed to send test alert: ' + err.message, 'error');
+      }
+    }
+
+    async function triggerTestPing(e) {
+      if (e) e.preventDefault();
+      showToast('Sending test ping to Discord DM...');
+      try {
+        const res = await fetch('/api/alerts/test', { method: 'POST' });
+        const json = await res.json();
+        if (json.success) {
+          showToast(json.message);
+          await loadLogs();
+          await loadStatus();
+        } else {
+          showToast(json.error, 'error');
+        }
+      } catch (err) {
+        showToast('Test ping failed: ' + err.message, 'error');
+      }
+    }
+
+    // ==========================================
+    // INGESTION PORTAL LOGIC (PHASE 5)
+    // ==========================================
+    const dropZone = document.getElementById('fileDropZone');
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone?.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone?.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+      });
+    });
+
+    dropZone?.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files.length > 0) {
+        processSelectedFile(files[0]);
+      }
+    });
+
+    function handleFileSelected(e) {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        processSelectedFile(files[0]);
+      }
+    }
+
+    function processSelectedFile(file) {
+      const infoEl = document.getElementById('selectedFileInfo');
+      const nameEl = document.getElementById('selectedFileName');
+      const sizeEl = document.getElementById('selectedFileSize');
+      const uploadBtn = document.getElementById('btnUploadSchedule');
+
+      nameEl.textContent = file.name;
+      sizeEl.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+      infoEl.style.display = 'block';
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          selectedFileContent = JSON.parse(event.target.result);
+          uploadBtn.disabled = false;
+          showToast(`Loaded ${file.name}`);
+        } catch (err) {
+          showToast('Invalid JSON file format', 'error');
+          selectedFileContent = null;
+          uploadBtn.disabled = true;
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    async function handleUploadFile() {
+      const pairingCode = document.getElementById('importPairingCode').value.trim();
+      if (!pairingCode) {
+        showToast('Please enter your Pairing Code first!', 'error');
+        document.getElementById('importPairingCode').focus();
+        return;
+      }
+      if (!selectedFileContent) {
+        showToast('Please select or drop a valid schedule JSON file.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnUploadSchedule');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Ingesting Schedule...';
+
+      try {
+        const res = await fetch('/api/user/import-schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pairing_code: pairingCode,
+            schedule_data: selectedFileContent
+          })
+        });
+
+        const json = await res.json();
+        if (json.success) {
+          showToast('Schedule successfully imported!');
+          displayImportSuccess(json);
+          activeUserId = json.user_id;
+          localStorage.setItem('friday_active_user_id', String(activeUserId));
+          await loadDashboard();
+        } else {
+          showToast(json.error, 'error');
+        }
+      } catch (err) {
+        showToast('Import error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀</span> Ingest & Link Schedule';
+      }
+    }
+
+    function displayImportSuccess(json) {
+      const card = document.getElementById('importFeedbackCard');
+      const msg = document.getElementById('importFeedbackMsg');
+      const details = document.getElementById('importFeedbackDetails');
+
+      const data = json.data;
+      const coursesStr = data.importedCourses.map(c => `• ${c.code} (Section ${c.section}) - ${c.faculty || 'Faculty TBA'} - Room ${c.room || 'TBA'}`).join('\n');
+
+      msg.innerHTML = `
+        ✅ Imported <strong>${data.coursesInserted}</strong> courses, <strong>${data.routineSlotsInserted}</strong> weekly class routine slots, and <strong>${data.eventsInserted}</strong> university exam schedules.<br>
+        ${json.dm_sent ? '📬 <strong>A welcoming confirmation DM has been sent to your Discord account!</strong>' : 'ℹ️ Linked to your account. (Ensure your Discord bot is running to receive live DMs).'}
+      `;
+
+      details.innerHTML = `User ID: #${json.user_id} | Discord Snowflake: ${json.discord_user_id}\n\nEnrolled Routine:\n${coursesStr}`;
+      card.style.display = 'block';
+    }
+
+    async function handleConsultationSearch(val) {
+      const container = document.getElementById('consultationSearchResults');
+      if (!val || !val.trim()) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+      }
+
+      const initial = val.trim().toUpperCase();
+      try {
+        const res = await fetch(`/api/consultations?initial=${encodeURIComponent(initial)}`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          const facultyName = json.data.find(s => s.faculty_name)?.faculty_name || '';
+          const facultyEmail = json.data.find(s => s.contact_email)?.contact_email || '';
+
+          container.innerHTML = `
+            <div style="margin-bottom:0.6rem; padding-bottom:0.4rem; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong style="color:var(--accent); font-size:1rem;">${initial}</strong>
+                ${facultyName ? `<span style="color:#fff; font-size:0.9rem; margin-left:0.4rem;">${facultyName}</span>` : ''}
+              </div>
+              ${facultyEmail ? `<span style="font-size:0.78rem; color:var(--text-muted); font-family:var(--font-mono);">${facultyEmail}</span>` : ''}
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.4rem;">
+              ${json.data.map(slot => `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(31, 41, 55, 0.6); padding:0.45rem 0.65rem; border-radius:8px; font-size:0.85rem;">
+                  <div>
+                    <span style="font-weight:700; color:#fff;">${slot.day_of_week}</span>
+                    <span style="color:var(--text-muted); margin-left:0.4rem;">${slot.start_time.substring(0,5)} - ${slot.end_time.substring(0,5)}</span>
+                  </div>
+                  <div style="display:flex; gap:0.5rem; align-items:center;">
+                    ${slot.room ? `<span style="background:rgba(99, 102, 241, 0.2); color:var(--accent); padding:0.15rem 0.45rem; border-radius:6px; font-size:0.78rem;">📍 ${slot.room}</span>` : ''}
+                    ${slot.consultation_link ? `<a href="${slot.consultation_link}" target="_blank" style="color:var(--success); font-size:0.78rem; text-decoration:none;">🔗 Join Link</a>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+          container.style.display = 'block';
+        } else {
+          container.innerHTML = `
+            <div style="text-align:center; padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">
+              🔍 No consultation hours registered for <strong>${initial}</strong> yet.<br>
+              <span style="font-size:0.78rem;">Use the form below to add their consultation schedule!</span>
+            </div>
+          `;
+          container.style.display = 'block';
+        }
+      } catch (err) {
+        console.warn('Consultation search error:', err);
+      }
+    }
+
+    async function handleSaveConsultation(event) {
+      event.preventDefault();
+      const initial = document.getElementById('consultInitial').value.trim().toUpperCase();
+      const name = document.getElementById('consultName').value.trim();
+      const day = document.getElementById('consultDay').value;
+      const startTime = document.getElementById('consultStartTime').value;
+      const endTime = document.getElementById('consultEndTime').value;
+      const room = document.getElementById('consultRoom').value.trim();
+      const link = document.getElementById('consultLink').value.trim();
+      const email = document.getElementById('consultEmail').value.trim();
+
+      const btn = document.getElementById('btnSaveConsultation');
+      btn.disabled = true;
+      btn.textContent = '⏳ Saving...';
+
+      try {
+        const res = await fetch('/api/consultations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            faculty_initial: initial,
+            faculty_name: name || null,
+            day_of_week: day,
+            start_time: startTime,
+            end_time: endTime,
+            room: room || null,
+            consultation_link: link || null,
+            contact_email: email || null
+          })
+        });
+
+        const json = await res.json();
+        if (json.success) {
+          showToast(`Consultation slot for ${initial} saved successfully!`);
+          document.getElementById('consultationSearchInput').value = initial;
+          await handleConsultationSearch(initial);
+        } else {
+          showToast(json.error || 'Failed to save consultation', 'error');
+        }
+      } catch (err) {
+        showToast('Error saving consultation: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 Save Consultation Slot';
+      }
+    }
+
+    // Check URL hash for direct tab navigation (e.g. #import)
+    if (window.location.hash) {
+      const hashTab = window.location.hash.replace('#', '');
+      if (['timetable', 'deadlines', 'import', 'logs', 'settings'].includes(hashTab)) {
+        switchTab(hashTab);
+      }
+    }
+
+    // Auto-refresh every 30s
+    setInterval(loadDashboard, 30000);
+    loadDashboard();
+  </script>
+</body>
+</html>

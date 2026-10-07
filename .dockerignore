@@ -1,0 +1,15 @@
+node_modules
+.env
+.env.*
+!.env.example
+academic.db
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.git
+.github
+.auth_profile/
+npm-debug.log*
+.DS_Store

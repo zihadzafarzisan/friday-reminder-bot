@@ -1,0 +1,233 @@
+import { getDb } from './index.js';
+import 'dotenv/config';
+
+/**
+ * Checks if a column exists in a given table
+ */
+function hasColumn(db, tableName, columnName) {
+  try {
+    const columns = db.prepare(`PRAGMA table_info(${tableName})`).all();
+    return columns.some(col => col.name === columnName);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Checks if a table exists
+ */
+function hasTable(db, tableName) {
+  try {
+    const table = db.prepare(`
+      SELECT name FROM sqlite_master WHERE type='table' AND name = ?;
+    `).get(tableName);
+    return Boolean(table);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Executes Phase 5 multi-tenant schema migration
+ */
+export function runMigration(db = getDb()) {
+  console.log('[*] Running Phase 5 Multi-Tenant Migration...');
+
+  // 1. Disable foreign keys during table recreation
+  db.exec('PRAGMA foreign_keys = OFF;');
+
+  // 2. Ensure users table exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      discord_user_id TEXT UNIQUE NOT NULL,
+      pairing_code TEXT UNIQUE,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  // 3. Ensure default User #1 exists
+  let defaultDiscordId = process.env.DISCORD_USER_ID;
+  if (!defaultDiscordId) {
+    try {
+      const setting = db.prepare("SELECT value FROM settings WHERE key = 'discord_user_id'").get();
+      if (setting && setting.value) defaultDiscordId = setting.value.trim();
+    } catch {}
+  }
+  if (!defaultDiscordId) defaultDiscordId = '1328051283080380559';
+
+  const existingDefaultUser = db.prepare('SELECT id, discord_user_id FROM users WHERE id = 1 OR discord_user_id = ?').get(defaultDiscordId);
+  if (!existingDefaultUser) {
+    db.prepare(`
+      INSERT INTO users (id, discord_user_id, pairing_code, created_at)
+      VALUES (1, ?, 'DEFAULT1', datetime('now'))
+    `).run(defaultDiscordId);
+    console.log(`[+] Created default User #1 for Discord ID: ${defaultDiscordId}`);
+  } else {
+    console.log(`[+] Default User found (ID: ${existingDefaultUser.id}, Discord ID: ${existingDefaultUser.discord_user_id})`);
+  }
+
+  // 4. Migrate courses table to include user_id
+  if (hasTable(db, 'courses')) {
+    if (!hasColumn(db, 'courses', 'user_id')) {
+      console.log('[*] Migrating courses table to include user_id...');
+      db.exec(`
+        CREATE TABLE courses_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          code TEXT NOT NULL,
+          name TEXT,
+          section TEXT NOT NULL,
+          faculty TEXT,
+          room TEXT,
+          credits REAL,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now')),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          UNIQUE(user_id, code, section)
+        );
+
+        INSERT INTO courses_new (id, user_id, code, name, section, faculty, room, credits, created_at, updated_at)
+        SELECT id, 1, code, name, section, faculty, room, credits, created_at, updated_at
+        FROM courses;
+
+        DROP TABLE courses;
+        ALTER TABLE courses_new RENAME TO courses;
+      `);
+      console.log('[+] Courses table migrated successfully.');
+    }
+  }
+
+  // 5. Migrate routine_slots table to include user_id
+  if (hasTable(db, 'routine_slots')) {
+    if (!hasColumn(db, 'routine_slots', 'user_id')) {
+      console.log('[*] Migrating routine_slots table to include user_id...');
+      db.exec(`
+        CREATE TABLE routine_slots_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          course_id INTEGER NOT NULL,
+          day_of_week TEXT NOT NULL,
+          start_time TEXT NOT NULL,
+          end_time TEXT NOT NULL,
+          room TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+          UNIQUE(course_id, day_of_week, start_time)
+        );
+
+        INSERT INTO routine_slots_new (id, user_id, course_id, day_of_week, start_time, end_time, room, created_at)
+        SELECT id, 1, course_id, day_of_week, start_time, end_time, room, created_at
+        FROM routine_slots;
+
+        DROP TABLE routine_slots;
+        ALTER TABLE routine_slots_new RENAME TO routine_slots;
+      `);
+      console.log('[+] Routine slots table migrated successfully.');
+    }
+  }
+
+  // 6. Migrate events table to include user_id
+  if (hasTable(db, 'events')) {
+    if (!hasColumn(db, 'events', 'user_id')) {
+      console.log('[*] Migrating events table to include user_id...');
+      db.exec(`
+        CREATE TABLE events_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          course_id INTEGER,
+          type TEXT NOT NULL,
+          title TEXT NOT NULL,
+          start_time TEXT NOT NULL,
+          end_time TEXT NOT NULL,
+          room TEXT,
+          is_custom INTEGER DEFAULT 0,
+          created_at TEXT DEFAULT (datetime('now')),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+          UNIQUE(user_id, course_id, type, start_time)
+        );
+
+        INSERT INTO events_new (id, user_id, course_id, type, title, start_time, end_time, room, is_custom, created_at)
+        SELECT id, 1, course_id, type, title, start_time, end_time, room, is_custom, created_at
+        FROM events;
+
+        DROP TABLE events;
+        ALTER TABLE events_new RENAME TO events;
+      `);
+      console.log('[+] Events table migrated successfully.');
+    }
+  }
+
+  // 7. Migrate notification_logs table to include user_id
+  if (hasTable(db, 'notification_logs')) {
+    if (!hasColumn(db, 'notification_logs', 'user_id')) {
+      console.log('[*] Migrating notification_logs table to include user_id...');
+      db.exec(`
+        CREATE TABLE notification_logs_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          event_id TEXT NOT NULL,
+          notification_type TEXT NOT NULL,
+          sent_at TEXT DEFAULT (datetime('now')),
+          status TEXT NOT NULL,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          UNIQUE(user_id, event_id, notification_type)
+        );
+
+        INSERT INTO notification_logs_new (id, user_id, event_id, notification_type, sent_at, status)
+        SELECT id, 1, event_id, notification_type, sent_at, status
+        FROM notification_logs;
+
+        DROP TABLE notification_logs;
+        ALTER TABLE notification_logs_new RENAME TO notification_logs;
+      `);
+      console.log('[+] Notification logs table migrated successfully.');
+    }
+  }
+
+  // 8. Create indexes if courses table exists
+  if (hasTable(db, 'courses')) {
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_courses_user ON courses(user_id);
+      CREATE INDEX IF NOT EXISTS idx_routine_slots_user_day ON routine_slots(user_id, day_of_week);
+      CREATE INDEX IF NOT EXISTS idx_events_user_time ON events(user_id, start_time);
+      CREATE INDEX IF NOT EXISTS idx_notification_logs_user_event ON notification_logs(user_id, event_id);
+      CREATE INDEX IF NOT EXISTS idx_users_discord ON users(discord_user_id);
+      CREATE INDEX IF NOT EXISTS idx_users_pairing ON users(pairing_code);
+    `);
+  }
+
+  // 9. Ensure faculty_consultations table and index exist
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS faculty_consultations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      faculty_initial TEXT NOT NULL COLLATE NOCASE,
+      faculty_name TEXT,
+      day_of_week TEXT NOT NULL,
+      start_time TEXT NOT NULL,
+      end_time TEXT NOT NULL,
+      room TEXT,
+      contact_email TEXT,
+      consultation_link TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_faculty_initial ON faculty_consultations(faculty_initial);
+  `);
+
+  // 10. Re-enable foreign keys
+  db.exec('PRAGMA foreign_keys = ON;');
+  console.log('[+] Phase 5 migration completed successfully.');
+}
+
+// Standalone CLI execution
+if (process.argv[1] && process.argv[1].endsWith('migrate.js')) {
+  try {
+    runMigration();
+    process.exit(0);
+  } catch (err) {
+    console.error('[!] Migration failed:', err);
+    process.exit(1);
+  }
+}
