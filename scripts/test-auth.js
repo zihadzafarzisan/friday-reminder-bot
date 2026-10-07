@@ -2,7 +2,7 @@ import assert from 'assert';
 import http from 'http';
 import { initTestEnvironment } from '../src/db/test-helper.js';
 import { createServer } from '../src/server.js';
-import { handleLinkCommand, handleLoginCommand, ensureAuthCodesTable } from '../src/commands/handlers.js';
+import { handleLinkCommand, handleLoginCommand, handleTaskButton, ensureAuthCodesTable } from '../src/commands/handlers.js';
 import { slashCommands } from '../src/commands/definitions.js';
 
 let passed = 0;
@@ -412,6 +412,45 @@ async function runTestSuite() {
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.body.success, true);
       assert.strictEqual(res.body.data.title, 'User 2 Legitimate Update');
+    });
+
+    await itAsync('Tenant Isolation: User #1 cannot inject event under User #2 via POST /api/events with body { user_id: 2 }', async () => {
+      const res = await request(server, '/api/events', 'POST', {
+        user_id: 2,
+        title: 'Tampered Event by User 1',
+        type: 'ASSIGNMENT',
+        start_time: '2026-11-20T10:00:00+06:00'
+      }, { Cookie: user1Cookie });
+
+      assert.strictEqual(res.status, 200);
+      const createdId = res.body.data.id;
+      const createdEv = db.prepare('SELECT user_id FROM events WHERE id = ?').get(createdId);
+      assert.strictEqual(createdEv.user_id, 1, 'Event must be bound to authenticated User #1, not spoofed User #2');
+    });
+
+    await itAsync('Tenant Isolation: User #1 only sees their own profile when calling GET /api/users', async () => {
+      const res = await request(server, '/api/users', 'GET', null, { Cookie: user1Cookie });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.body.data.length, 1);
+      assert.strictEqual(res.body.data[0].id, 1);
+    });
+
+    await itAsync('Tenant Isolation: Discord Bot - User #1 cannot complete User #2 task via button', async () => {
+      let replyCaptured = null;
+      const mockInteractionUser1 = {
+        customId: 'complete_task_901',
+        user: testDiscordUser1,
+        reply: async (p) => { replyCaptured = p; return p; },
+        update: () => { assert.fail('Should not update when access denied'); }
+      };
+
+      await handleTaskButton(mockInteractionUser1, db);
+      assert.ok(replyCaptured, 'Access denied reply captured');
+      assert.ok(replyCaptured.content.includes('Access denied'), 'Must reject completion of another student task');
+
+      // Verify event 901 was NOT deleted
+      const evCheck = db.prepare('SELECT id FROM events WHERE id = 901').get();
+      assert.ok(evCheck, 'User #2 event 901 must not be deleted');
     });
 
     // --- TEST GROUP 7: Logout Flow (POST /api/auth/logout) ---

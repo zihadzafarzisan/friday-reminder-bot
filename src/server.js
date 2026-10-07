@@ -179,12 +179,16 @@ export function createSession(userId, res, db) {
  */
 export function getRequestUserId(req, db) {
   // Priority 1: Authenticated session (strongest isolation, cannot be overridden by params)
+  if (req.userId) {
+    return req.userId;
+  }
   if (req.authenticatedUser) {
     return req.authenticatedUser.id;
   }
   const sessionUser = getSessionUser(req, db);
   if (sessionUser) {
     req.authenticatedUser = sessionUser;
+    req.userId = sessionUser.id;
     return sessionUser.id;
   }
   // Priority 2: Query param (for test environments or explicit overrides in tests)
@@ -198,6 +202,65 @@ export function getRequestUserId(req, db) {
     if (!isNaN(parsed)) return parsed;
   }
   return 1;
+}
+
+/**
+ * Strict authentication middleware: ensures req.userId is extracted from session
+ * and rejects unauthenticated API requests immediately.
+ */
+export function requireAuth(req, res, next) {
+  // Public routes that bypass auth:
+  if (
+    req.path === '/ping' ||
+    req.path === '/login' ||
+    req.path === '/logout' ||
+    req.path.startsWith('/auth/') ||
+    req.path.startsWith('/api/auth/') ||
+    req.path === '/user/import-schedule' ||
+    req.path === '/api/user/import-schedule'
+  ) {
+    return next();
+  }
+
+  const db = getDb();
+  const sessionUser = req.signedCookies?.friday_session || req.cookies?.friday_session;
+
+  if (!sessionUser && !req.authenticatedUser) {
+    // In test environment without session cookie and without enforce-auth, allow legacy tests
+    if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-auth']) {
+      req.userId = getRequestUserId(req, db);
+      return next();
+    }
+
+    if (req.path.startsWith('/api/') || req.baseUrl === '/api') {
+      return res.status(401).json({ success: false, error: 'Unauthorized. Please log in.' });
+    }
+    return res.redirect('/login');
+  }
+
+  // Resolve user
+  let user = req.authenticatedUser || getSessionUser(req, db);
+  if (!user && sessionUser) {
+    const parsedId = parseInt(sessionUser, 10);
+    if (!isNaN(parsedId)) {
+      user = db.prepare('SELECT id, discord_user_id, username, pairing_code FROM users WHERE id = ?').get(parsedId);
+    }
+  }
+
+  if (!user) {
+    if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-auth']) {
+      req.userId = getRequestUserId(req, db);
+      return next();
+    }
+    if (req.path.startsWith('/api/') || req.baseUrl === '/api') {
+      return res.status(401).json({ success: false, error: 'Unauthorized. Please log in.' });
+    }
+    return res.redirect('/login');
+  }
+
+  req.authenticatedUser = user;
+  req.userId = user.id;
+  next();
 }
 
 export function createServer() {
@@ -230,6 +293,7 @@ export function createServer() {
     const user = getSessionUser(req, db);
     if (user) {
       req.authenticatedUser = user;
+      req.userId = user.id;
     }
     next();
   });
@@ -364,33 +428,27 @@ export function createServer() {
   });
 
   // Route protection middleware for /api/*
-  app.use('/api', (req, res, next) => {
-    // Endpoints that do not require session auth:
-    if (
-      req.path.startsWith('/auth/') ||
-      req.path === '/user/import-schedule'
-    ) {
-      return next();
-    }
-
-    if (req.authenticatedUser) {
-      return next();
-    }
-
-    // In test environment without explicit auth enforcement, allow access for legacy test suites
-    if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-auth']) {
-      return next();
-    }
-
-    return res.status(401).json({
-      success: false,
-      error: 'Authentication required. Please log in at /login.'
-    });
-  });
+  app.use('/api', requireAuth);
 
   // 1. GET /api/users - List all registered student profiles
   app.get('/api/users', (req, res) => {
     try {
+      if (req.authenticatedUser) {
+        const users = db.prepare(`
+          SELECT 
+            u.id, 
+            u.discord_user_id, 
+            u.pairing_code, 
+            u.created_at,
+            (SELECT count(*) FROM courses WHERE user_id = u.id) as courses_count,
+            (SELECT count(*) FROM routine_slots WHERE user_id = u.id) as routine_slots_count,
+            (SELECT count(*) FROM events WHERE user_id = u.id) as events_count
+          FROM users u
+          WHERE u.id = ?
+        `).all(req.authenticatedUser.id);
+        return res.json({ success: true, data: users });
+      }
+
       const users = db.prepare(`
         SELECT 
           u.id, 

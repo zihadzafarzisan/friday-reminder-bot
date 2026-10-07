@@ -902,7 +902,13 @@ export async function handleTaskButton(interaction, db = getDb()) {
   const eventIdStr = customId.replace('complete_task_', '');
   const eventId = parseInt(eventIdStr, 10);
   const user = getUserFromInteraction(interaction, db);
-  const userId = user ? user.id : 1;
+  if (!user) {
+    return Promise.resolve(interaction.reply({
+      content: '⚠️ You have not linked your Discord account yet! Run **/start** first.',
+      flags: 64
+    })).catch(() => {});
+  }
+  const userId = user.id;
 
   // 1. Fetch event from DB
   const ev = db.prepare(`
@@ -912,12 +918,25 @@ export async function handleTaskButton(interaction, db = getDb()) {
     WHERE e.id = ?;
   `).get(eventId);
 
-  const eventTitle = ev ? ev.title : `Task #${eventId}`;
-
-  // 2. Delete event from academic.db
-  if (ev) {
-    db.prepare('DELETE FROM events WHERE id = ?').run(eventId);
+  if (!ev) {
+    return Promise.resolve(interaction.reply({
+      content: '⚠️ Task not found or already completed.',
+      flags: 64
+    })).catch(() => {});
   }
+
+  // Enforce strict multi-tenant data boundaries: User B cannot complete User A's task
+  if (ev.user_id !== userId) {
+    return Promise.resolve(interaction.reply({
+      content: "⛔ Access denied: You cannot complete another student's task.",
+      flags: 64
+    })).catch(() => {});
+  }
+
+  const eventTitle = ev.title;
+
+  // 2. Delete event from academic.db scoped by user_id
+  db.prepare('DELETE FROM events WHERE id = ? AND user_id = ?').run(eventId, userId);
 
   // 3. Record in notification_logs to suppress remaining tiers
   const suppressionTiers = [
