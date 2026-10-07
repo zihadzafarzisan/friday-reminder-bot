@@ -293,6 +293,19 @@ async function runTestSuite() {
       assert.strictEqual(res.body.user.id, 1);
     });
 
+    await itAsync('GET / without session cookie redirects unauthenticated user to /login (302 Found)', async () => {
+      const res = await request(server, '/');
+      assert.strictEqual(res.status, 302);
+      assert.strictEqual(res.headers.location, '/login');
+    });
+
+    await itAsync('GET / with valid session cookie returns 200 with dashboard HTML', async () => {
+      const res = await request(server, '/', 'GET', null, { Cookie: user1Cookie });
+      assert.strictEqual(res.status, 200);
+      assert.ok(typeof res.body === 'string', 'Body must be HTML string');
+      assert.ok(res.body.includes('FRIDAY'), 'Contains FRIDAY branding');
+    });
+
     await itAsync('GET /login with active session cookie redirects to / (302 Found)', async () => {
       const res = await request(server, '/login', 'GET', null, { Cookie: user1Cookie });
       assert.strictEqual(res.status, 302);
@@ -418,6 +431,22 @@ async function runTestSuite() {
       const meRes = await request(server, '/api/auth/me', 'GET', null, { Cookie: user1Cookie });
       assert.strictEqual(meRes.status, 401);
       assert.strictEqual(meRes.body.authenticated, false);
+    });
+
+    await itAsync('GET /logout invalidates session and redirects to /login (302 Found)', async () => {
+      const res = await request(server, '/logout', 'GET', null, { Cookie: user2Cookie });
+      assert.strictEqual(res.status, 302);
+      assert.strictEqual(res.headers.location, '/login');
+
+      // Verify User 2 session removed from DB
+      const token = user2Cookie.replace('friday_session=', '');
+      const sess = db.prepare('SELECT * FROM sessions WHERE token = ?').get(token);
+      assert.strictEqual(sess, undefined, 'User 2 session must be deleted from DB');
+
+      // Subsequent /api/auth/me for User 2 returns 401
+      const meRes2 = await request(server, '/api/auth/me', 'GET', null, { Cookie: user2Cookie });
+      assert.strictEqual(meRes2.status, 401);
+      assert.strictEqual(meRes2.body.authenticated, false);
     });
 
     console.log('\n====================================================');

@@ -245,12 +245,27 @@ export function createServer() {
     res.sendFile(path.join(PUBLIC_DIR, 'login.html'));
   });
 
-  // GET / - Dashboard home, requires authentication in production
+  // GET / - Dashboard home, requires authentication
   app.get('/', (req, res) => {
-    if (!req.authenticatedUser && process.env.NODE_ENV !== 'test') {
+    if (!req.authenticatedUser) {
       return res.redirect('/login');
     }
     res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  });
+
+  // GET & POST /logout - Terminate session & redirect to /login
+  app.all('/logout', (req, res) => {
+    try {
+      const token = req.cookies?.friday_session;
+      if (token) {
+        db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+      }
+      res.clearCookie('friday_session', { path: '/' });
+    } catch {}
+    if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+      return res.json({ success: true, message: 'Logged out successfully.' });
+    }
+    return res.redirect('/login');
   });
 
   // POST /api/auth/login - Validate one-time passkey & create session
@@ -1426,7 +1441,7 @@ export function createServer() {
       return res.sendFile(path.join(PUBLIC_DIR, 'login.html'));
     }
     const user = req.authenticatedUser || getSessionUser(req, db);
-    if (!user && process.env.NODE_ENV !== 'test') {
+    if (!user) {
       return res.redirect('/login');
     }
     res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
