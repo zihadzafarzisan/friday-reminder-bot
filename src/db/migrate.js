@@ -185,6 +185,61 @@ export function runMigration(db = getDb()) {
       `);
       console.log('[+] Notification logs table migrated successfully.');
     }
+
+    if (!hasColumn(db, 'notification_logs', 'entity_id')) {
+      console.log('[*] Migrating notification_logs table to include atomic deduplication schema...');
+      db.exec(`
+        CREATE TABLE notification_logs_dedup_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL DEFAULT 1,
+          entity_id INTEGER NOT NULL DEFAULT 0,
+          entity_type TEXT NOT NULL DEFAULT 'event',
+          alert_window TEXT NOT NULL DEFAULT 'due',
+          notification_date TEXT NOT NULL DEFAULT (date('now')),
+          sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          status TEXT DEFAULT 'SENT',
+          event_id TEXT,
+          notification_type TEXT,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          UNIQUE(user_id, entity_id, entity_type, alert_window, notification_date)
+        );
+
+        INSERT OR IGNORE INTO notification_logs_dedup_new (
+          id, user_id, entity_id, entity_type, alert_window, notification_date, sent_at, status, event_id, notification_type
+        )
+        SELECT 
+          id, 
+          COALESCE(user_id, 1), 
+          CASE 
+            WHEN event_id LIKE 'ROUTINE_%' THEN CAST(substr(event_id, 9, instr(substr(event_id, 9), '_') - 1) AS INTEGER)
+            ELSE COALESCE(CAST(event_id AS INTEGER), 0)
+          END AS entity_id,
+          CASE 
+            WHEN event_id LIKE 'ROUTINE_%' THEN 'routine_slot'
+            ELSE 'event'
+          END AS entity_type,
+          CASE 
+            WHEN notification_type = '30M_BEFORE' THEN '30m'
+            WHEN notification_type = '10M_BEFORE' THEN '10m'
+            WHEN notification_type = '1H_BEFORE' THEN '1h'
+            WHEN notification_type = '24H_BEFORE' THEN '24h'
+            ELSE LOWER(notification_type)
+          END AS alert_window,
+          CASE 
+            WHEN event_id LIKE 'ROUTINE_%' THEN substr(event_id, 9 + instr(substr(event_id, 9), '_'))
+            ELSE date(COALESCE(sent_at, 'now'))
+          END AS notification_date,
+          COALESCE(sent_at, CURRENT_TIMESTAMP),
+          status,
+          event_id,
+          notification_type
+        FROM notification_logs;
+
+        DROP TABLE notification_logs;
+        ALTER TABLE notification_logs_dedup_new RENAME TO notification_logs;
+      `);
+      console.log('[+] notification_logs migrated to atomic deduplication schema successfully.');
+    }
   }
 
   // 8. Create indexes if courses table exists
@@ -194,6 +249,7 @@ export function runMigration(db = getDb()) {
       CREATE INDEX IF NOT EXISTS idx_routine_slots_user_day ON routine_slots(user_id, day_of_week);
       CREATE INDEX IF NOT EXISTS idx_events_user_time ON events(user_id, start_time);
       CREATE INDEX IF NOT EXISTS idx_notification_logs_user_event ON notification_logs(user_id, event_id);
+      CREATE INDEX IF NOT EXISTS idx_notification_logs_dedup ON notification_logs(user_id, entity_id, entity_type, alert_window, notification_date);
       CREATE INDEX IF NOT EXISTS idx_users_discord ON users(discord_user_id);
       CREATE INDEX IF NOT EXISTS idx_users_pairing ON users(pairing_code);
     `);

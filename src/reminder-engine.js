@@ -2,6 +2,63 @@ import { getDb } from './db/index.js';
 import { sendDM, buildClassAlertEmbed, buildExamAlertEmbed, buildTaskAlertEmbed } from './bot.js';
 import { buildTaskActionRow } from './commands/handlers.js';
 
+let isEngineRunning = false;
+let engineTimer = null;
+
+export function isReminderEngineRunning() {
+  return isEngineRunning;
+}
+
+export function startReminderEngine({
+  db = getDb(),
+  discordClient = null,
+  intervalMinutes = parseInt(process.env.REMINDER_INTERVAL_MINUTES || '1', 10)
+} = {}) {
+  if (isEngineRunning) {
+    console.warn('[!] Reminder engine already active. Skipping duplicate initialization.');
+    return engineTimer;
+  }
+  isEngineRunning = true;
+
+  const intervalMs = Math.max(1, intervalMinutes) * 60 * 1000;
+
+  // Run immediate first evaluation tick
+  runEvaluationTick({ db, discordClient }).then(dispatches => {
+    if (dispatches && dispatches.length > 0) {
+      console.log(`[+] Startup tick: Dispatched ${dispatches.length} reminder(s).`);
+    } else {
+      const now = getDhakaContext();
+      console.log(`[+] Startup tick (${now.isoDhaka}): No pending reminders due right now.`);
+    }
+  }).catch(err => {
+    console.error('[!] Error during startup evaluation tick:', err.message);
+  });
+
+  // Start periodic evaluation loop
+  engineTimer = setInterval(async () => {
+    try {
+      const dispatches = await runEvaluationTick({ db, discordClient });
+      if (dispatches && dispatches.length > 0) {
+        for (const d of dispatches) {
+          console.log(`[+] Dispatched [${d.type}] ${d.offset} for user ${d.userId} (${d.course}) - Status: ${d.status}`);
+        }
+      }
+    } catch (err) {
+      console.error('[!] Error during evaluation tick:', err.message);
+    }
+  }, intervalMs);
+
+  return engineTimer;
+}
+
+export function stopReminderEngine() {
+  if (engineTimer) {
+    clearInterval(engineTimer);
+    engineTimer = null;
+  }
+  isEngineRunning = false;
+}
+
 /**
  * Returns the current date and time components in the Asia/Dhaka (UTC+6) timezone
  */
@@ -90,13 +147,15 @@ export async function runEvaluationTick({
 
   const checkLogStmt = db.prepare(`
     SELECT status FROM notification_logs 
-    WHERE user_id = ? AND event_id = ? AND notification_type = ?;
+    WHERE user_id = ? AND entity_id = ? AND entity_type = ? AND alert_window = ? AND notification_date = ?;
   `);
 
   const recordLogStmt = db.prepare(`
-    INSERT INTO notification_logs (user_id, event_id, notification_type, status)
-    VALUES (?, ?, ?, ?)
-    ON CONFLICT(user_id, event_id, notification_type) DO UPDATE SET
+    INSERT INTO notification_logs (
+      user_id, entity_id, entity_type, alert_window, notification_date, status, event_id, notification_type
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(user_id, entity_id, entity_type, alert_window, notification_date) DO UPDATE SET
       sent_at = datetime('now'),
       status = excluded.status;
   `);
@@ -167,7 +226,7 @@ export async function runEvaluationTick({
 
       // Trigger: 30 minutes before (window: 25 - 30 minutes)
       if (diffMinutes >= 25 && diffMinutes <= 30) {
-        const existing = checkLogStmt.get(currentUserId, eventKey, '30M_BEFORE');
+        const existing = checkLogStmt.get(currentUserId, slot.slot_id, 'routine_slot', '30m', dateStr);
         if (!existing) {
           let status = 'SENT';
           if (!dryRun && targetDiscordUserId && discordClient) {
@@ -175,14 +234,14 @@ export async function runEvaluationTick({
             const res = await sendDM(targetDiscordUserId, { embeds: [embed] }, discordClient);
             status = res.success ? 'SENT' : 'FAILED';
           }
-          if (!dryRun) recordLogStmt.run(currentUserId, eventKey, '30M_BEFORE', status);
+          if (!dryRun) recordLogStmt.run(currentUserId, slot.slot_id, 'routine_slot', '30m', dateStr, status, eventKey, '30M_BEFORE');
           dispatched.push({ userId: currentUserId, targetDiscordUserId, type: 'ROUTINE', eventKey, offset: '30M_BEFORE', diffMinutes, course: slot.code, status });
         }
       }
 
       // Trigger: 10 minutes before (window: 5 - 10 minutes)
       if (diffMinutes >= 5 && diffMinutes <= 10) {
-        const existing = checkLogStmt.get(currentUserId, eventKey, '10M_BEFORE');
+        const existing = checkLogStmt.get(currentUserId, slot.slot_id, 'routine_slot', '10m', dateStr);
         if (!existing) {
           let status = 'SENT';
           if (!dryRun && targetDiscordUserId && discordClient) {
@@ -190,7 +249,7 @@ export async function runEvaluationTick({
             const res = await sendDM(targetDiscordUserId, { embeds: [embed] }, discordClient);
             status = res.success ? 'SENT' : 'FAILED';
           }
-          if (!dryRun) recordLogStmt.run(currentUserId, eventKey, '10M_BEFORE', status);
+          if (!dryRun) recordLogStmt.run(currentUserId, slot.slot_id, 'routine_slot', '10m', dateStr, status, eventKey, '10M_BEFORE');
           dispatched.push({ userId: currentUserId, targetDiscordUserId, type: 'ROUTINE', eventKey, offset: '10M_BEFORE', diffMinutes, course: slot.code, status });
         }
       }
@@ -233,7 +292,7 @@ export async function runEvaluationTick({
 
       // Trigger: 24 hours before (window: 1410 - 1440 minutes)
       if (diffMinutes >= 1410 && diffMinutes <= 1440) {
-        const existing = checkLogStmt.get(currentUserId, eventKey, '24H_BEFORE');
+        const existing = checkLogStmt.get(currentUserId, ev.event_id, 'event', '24h', dateStr);
         if (!existing) {
           let status = 'SENT';
           if (!dryRun && targetDiscordUserId && discordClient) {
@@ -241,14 +300,14 @@ export async function runEvaluationTick({
             const res = await sendDM(targetDiscordUserId, { embeds: [embed], components }, discordClient);
             status = res.success ? 'SENT' : 'FAILED';
           }
-          if (!dryRun) recordLogStmt.run(currentUserId, eventKey, '24H_BEFORE', status);
+          if (!dryRun) recordLogStmt.run(currentUserId, ev.event_id, 'event', '24h', dateStr, status, eventKey, '24H_BEFORE');
           dispatched.push({ userId: currentUserId, targetDiscordUserId, type: ev.type, eventKey, offset: '24H_BEFORE', diffMinutes, course: ev.code || ev.title, status });
         }
       }
 
       // Trigger: 1 hour before (window: 50 - 60 minutes)
       if (diffMinutes >= 50 && diffMinutes <= 60) {
-        const existing = checkLogStmt.get(currentUserId, eventKey, '1H_BEFORE');
+        const existing = checkLogStmt.get(currentUserId, ev.event_id, 'event', '1h', dateStr);
         if (!existing) {
           let status = 'SENT';
           if (!dryRun && targetDiscordUserId && discordClient) {
@@ -256,14 +315,14 @@ export async function runEvaluationTick({
             const res = await sendDM(targetDiscordUserId, { embeds: [embed], components }, discordClient);
             status = res.success ? 'SENT' : 'FAILED';
           }
-          if (!dryRun) recordLogStmt.run(currentUserId, eventKey, '1H_BEFORE', status);
+          if (!dryRun) recordLogStmt.run(currentUserId, ev.event_id, 'event', '1h', dateStr, status, eventKey, '1H_BEFORE');
           dispatched.push({ userId: currentUserId, targetDiscordUserId, type: ev.type, eventKey, offset: '1H_BEFORE', diffMinutes, course: ev.code || ev.title, status });
         }
       }
 
       // Trigger: 10 minutes before (window: 5 - 10 minutes) for quizzes, assignments, and tasks
       if (!isExam && diffMinutes >= 5 && diffMinutes <= 10) {
-        const existing = checkLogStmt.get(currentUserId, eventKey, '10M_BEFORE');
+        const existing = checkLogStmt.get(currentUserId, ev.event_id, 'event', '10m', dateStr);
         if (!existing) {
           let status = 'SENT';
           if (!dryRun && targetDiscordUserId && discordClient) {
@@ -271,7 +330,7 @@ export async function runEvaluationTick({
             const res = await sendDM(targetDiscordUserId, { embeds: [embed], components }, discordClient);
             status = res.success ? 'SENT' : 'FAILED';
           }
-          if (!dryRun) recordLogStmt.run(currentUserId, eventKey, '10M_BEFORE', status);
+          if (!dryRun) recordLogStmt.run(currentUserId, ev.event_id, 'event', '10m', dateStr, status, eventKey, '10M_BEFORE');
           dispatched.push({ userId: currentUserId, targetDiscordUserId, type: ev.type, eventKey, offset: '10M_BEFORE', diffMinutes, course: ev.code || ev.title, status });
         }
       }

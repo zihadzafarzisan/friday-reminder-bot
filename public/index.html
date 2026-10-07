@@ -1267,6 +1267,72 @@
     </div>
   </div>
 
+  <!-- EDIT CONSULTATION MODAL -->
+  <div id="editConsultationModal" class="modal-overlay">
+    <div class="modal-box">
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem;">✏️ Edit Faculty Consultation Slot</h3>
+      <form id="editConsultationForm" onsubmit="handleUpdateConsultation(event)">
+        <input type="hidden" id="editConsultId" value="">
+        <div style="display:grid; grid-template-columns:1fr 1.6fr; gap:0.75rem; margin-bottom:1rem;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Faculty Initial *</label>
+            <input type="text" class="form-input" id="editConsultInitial" required placeholder="e.g. MSI" style="font-family:var(--font-mono); text-transform:uppercase;">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Faculty Name</label>
+            <input type="text" class="form-input" id="editConsultName" placeholder="e.g. Dr. Muhammad S. Islam">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Contact Email</label>
+          <input type="email" class="form-input" id="editConsultEmail" placeholder="e.g. faculty@bracu.ac.bd">
+        </div>
+
+        <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Day of Week *</label>
+            <select class="form-select" id="editConsultDay" required>
+              <option value="SUNDAY">Sunday</option>
+              <option value="MONDAY">Monday</option>
+              <option value="TUESDAY">Tuesday</option>
+              <option value="WEDNESDAY">Wednesday</option>
+              <option value="THURSDAY">Thursday</option>
+              <option value="FRIDAY">Friday</option>
+              <option value="SATURDAY">Saturday</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Start Time *</label>
+            <input type="time" class="form-input" id="editConsultStart" required>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">End Time *</label>
+            <input type="time" class="form-input" id="editConsultEnd" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Room / Location</label>
+          <input type="text" class="form-input" id="editConsultRoom" placeholder="e.g. UB0802">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Consultation Link (Optional)</label>
+          <input type="url" class="form-input" id="editConsultLink" placeholder="e.g. https://meet.google.com/...">
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+          <button type="button" class="btn btn-secondary" style="color:var(--danger); border-color:rgba(239,68,68,0.3);" onclick="handleDeleteConsultationFromModal()">🗑️ Delete Slot</button>
+          <div style="display:flex; gap:0.75rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeEditConsultationModal()">Cancel</button>
+            <button type="submit" class="btn" id="editConsultSubmitBtn">Save Changes</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- TOAST CONTAINER -->
   <div class="toast-container" id="toastContainer"></div>
 
@@ -2035,6 +2101,7 @@
         const res = await fetch(`/api/consultations?initial=${encodeURIComponent(initial)}`);
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          window.lastConsultationSlots = json.data;
           const facultyName = json.data.find(s => s.faculty_name)?.faculty_name || '';
           const facultyEmail = json.data.find(s => s.contact_email)?.contact_email || '';
 
@@ -2048,14 +2115,15 @@
             </div>
             <div style="display:flex; flex-direction:column; gap:0.4rem;">
               ${json.data.map(slot => `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(31, 41, 55, 0.6); padding:0.45rem 0.65rem; border-radius:8px; font-size:0.85rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(31, 41, 55, 0.6); padding:0.45rem 0.65rem; border-radius:8px; font-size:0.85rem; gap:0.5rem; flex-wrap:wrap;">
                   <div>
                     <span style="font-weight:700; color:#fff;">${slot.day_of_week}</span>
                     <span style="color:var(--text-muted); margin-left:0.4rem;">${slot.start_time.substring(0,5)} - ${slot.end_time.substring(0,5)}</span>
                   </div>
-                  <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <div style="display:flex; gap:0.4rem; align-items:center;">
                     ${slot.room ? `<span style="background:rgba(99, 102, 241, 0.2); color:var(--accent); padding:0.15rem 0.45rem; border-radius:6px; font-size:0.78rem;">📍 ${slot.room}</span>` : ''}
                     ${slot.consultation_link ? `<a href="${slot.consultation_link}" target="_blank" style="color:var(--success); font-size:0.78rem; text-decoration:none;">🔗 Join Link</a>` : ''}
+                    <button type="button" class="btn-action" style="padding:0.2rem 0.55rem; font-size:0.75rem; border-radius:6px; border:1px solid rgba(99,102,241,0.4); color:var(--accent);" onclick="openEditConsultationModal(${slot.id})" title="Edit Slot">✏️ Edit</button>
                   </div>
                 </div>
               `).join('')}
@@ -2063,6 +2131,7 @@
           `;
           container.style.display = 'block';
         } else {
+          window.lastConsultationSlots = [];
           container.innerHTML = `
             <div style="text-align:center; padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">
               🔍 No consultation hours registered for <strong>${initial}</strong> yet.<br>
@@ -2073,6 +2142,103 @@
         }
       } catch (err) {
         console.warn('Consultation search error:', err);
+      }
+    }
+
+    function openEditConsultationModal(slotId) {
+      const slot = (window.lastConsultationSlots || []).find(s => s.id === slotId);
+      if (!slot) return;
+      document.getElementById('editConsultId').value = slot.id;
+      document.getElementById('editConsultInitial').value = slot.faculty_initial || '';
+      document.getElementById('editConsultName').value = slot.faculty_name || '';
+      document.getElementById('editConsultEmail').value = slot.contact_email || '';
+      document.getElementById('editConsultDay').value = slot.day_of_week || 'SUNDAY';
+      document.getElementById('editConsultStart').value = (slot.start_time || '').substring(0, 5);
+      document.getElementById('editConsultEnd').value = (slot.end_time || '').substring(0, 5);
+      document.getElementById('editConsultRoom').value = slot.room || '';
+      document.getElementById('editConsultLink').value = slot.consultation_link || '';
+
+      const modal = document.getElementById('editConsultationModal');
+      modal.classList.add('active');
+    }
+
+    function closeEditConsultationModal() {
+      const modal = document.getElementById('editConsultationModal');
+      modal.classList.remove('active');
+    }
+
+    async function handleUpdateConsultation(event) {
+      event.preventDefault();
+      const id = document.getElementById('editConsultId').value;
+      if (!id) return;
+
+      const btn = document.getElementById('editConsultSubmitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      const initial = document.getElementById('editConsultInitial').value.trim().toUpperCase();
+      const name = document.getElementById('editConsultName').value.trim() || null;
+      const email = document.getElementById('editConsultEmail').value.trim() || null;
+      const day = document.getElementById('editConsultDay').value;
+      const start = document.getElementById('editConsultStart').value;
+      const end = document.getElementById('editConsultEnd').value;
+      const room = document.getElementById('editConsultRoom').value.trim() || null;
+      const link = document.getElementById('editConsultLink').value.trim() || null;
+
+      try {
+        const res = await fetch(`/api/consultations/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            faculty_initial: initial,
+            faculty_name: name,
+            contact_email: email,
+            day_of_week: day,
+            start_time: start,
+            end_time: end,
+            room: room,
+            consultation_link: link
+          })
+        });
+
+        const json = await res.json();
+        if (res.ok && json.success) {
+          showToast('Consultation slot updated successfully!');
+          closeEditConsultationModal();
+          document.getElementById('consultationSearchInput').value = initial;
+          await handleConsultationSearch(initial);
+        } else {
+          showToast(json.error || 'Failed to update consultation slot', 'error');
+        }
+      } catch (err) {
+        showToast('Error updating consultation: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+      }
+    }
+
+    async function handleDeleteConsultationFromModal() {
+      const id = document.getElementById('editConsultId').value;
+      if (!id) return;
+
+      const initial = document.getElementById('editConsultInitial').value.trim().toUpperCase();
+      if (!confirm('Are you sure you want to delete this consultation slot?')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/consultations/${id}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          showToast('Consultation slot deleted.');
+          closeEditConsultationModal();
+          await handleConsultationSearch(initial);
+        } else {
+          showToast(json.error || 'Failed to delete consultation slot', 'error');
+        }
+      } catch (err) {
+        showToast('Error deleting consultation: ' + err.message, 'error');
       }
     }
 

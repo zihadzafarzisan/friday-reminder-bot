@@ -10,6 +10,11 @@ import {
   handleInteraction 
 } from '../src/commands/handlers.js';
 import { slashCommands } from '../src/commands/register.js';
+import { 
+  startReminderEngine, 
+  stopReminderEngine, 
+  isReminderEngineRunning 
+} from '../src/reminder-engine.js';
 
 let passed = 0;
 let failed = 0;
@@ -357,6 +362,60 @@ async function runTests() {
     assert.strictEqual(res.body.count, 1);
   });
 
+  await itAsync('PUT /api/consultations/:id updates an existing consultation slot', async () => {
+    const ins = db.prepare(`
+      INSERT INTO faculty_consultations (faculty_initial, faculty_name, day_of_week, start_time, end_time, room)
+      VALUES (?, ?, ?, ?, ?, ?)
+      RETURNING id;
+    `).get('MRA', 'Dr. Md. R. Amin', 'SUNDAY', '11:00', '12:30', 'UB0901');
+
+    const updatePayload = {
+      faculty_initial: 'mra',
+      faculty_name: 'Prof. Md. Ruhul Amin',
+      day_of_week: 'monday',
+      start_time: '11:30 AM',
+      end_time: '01:00 PM',
+      room: 'UB0905',
+      contact_email: 'ramin@bracu.ac.bd',
+      consultation_link: 'https://meet.google.com/mra-consult'
+    };
+
+    const res = await request(server, `/api/consultations/${ins.id}`, 'PUT', updatePayload);
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.success, true);
+    assert.strictEqual(res.body.data.faculty_initial, 'MRA');
+    assert.strictEqual(res.body.data.faculty_name, 'Prof. Md. Ruhul Amin');
+    assert.strictEqual(res.body.data.day_of_week, 'MONDAY');
+    assert.strictEqual(res.body.data.start_time, '11:30');
+    assert.strictEqual(res.body.data.end_time, '13:00');
+    assert.strictEqual(res.body.data.room, 'UB0905');
+    assert.strictEqual(res.body.data.contact_email, 'ramin@bracu.ac.bd');
+    assert.strictEqual(res.body.data.consultation_link, 'https://meet.google.com/mra-consult');
+
+    const row = db.prepare('SELECT * FROM faculty_consultations WHERE id = ?').get(ins.id);
+    assert.strictEqual(row.room, 'UB0905');
+    assert.strictEqual(row.day_of_week, 'MONDAY');
+  });
+
+  await itAsync('PUT /api/consultations/:id rejects missing required fields with 400', async () => {
+    const ins = db.prepare(`SELECT id FROM faculty_consultations LIMIT 1`).get();
+    const badPayload = { faculty_initial: '', day_of_week: 'MONDAY', start_time: '10:00', end_time: '11:00' };
+    const res = await request(server, `/api/consultations/${ins.id}`, 'PUT', badPayload);
+    assert.strictEqual(res.status, 400);
+    assert.strictEqual(res.body.success, false);
+  });
+
+  await itAsync('PUT /api/consultations/:id returns 404 for non-existent slot ID', async () => {
+    const res = await request(server, '/api/consultations/9999999', 'PUT', {
+      faculty_initial: 'XYZ',
+      day_of_week: 'SUNDAY',
+      start_time: '10:00',
+      end_time: '11:00'
+    });
+    assert.strictEqual(res.status, 404);
+    assert.strictEqual(res.body.success, false);
+  });
+
   // --- TEST GROUP 4: Strict Architectural Constraints (No Background Reminders) ---
   console.log('\n--- TEST GROUP 4: Strict Architectural Constraints (No Background Notifications) ---');
 
@@ -389,6 +448,71 @@ async function runTests() {
       false,
       'reminder-engine.js must NOT reference or query faculty_consultations'
     );
+  });
+
+  // --- TEST GROUP 5: Engine Idempotency & Notification Deduplication ---
+  console.log('\n--- TEST GROUP 5: Engine Idempotency & Notification Deduplication ---');
+
+  it('startReminderEngine enforces idempotency lock and returns same timer without duplicating', () => {
+    stopReminderEngine(); // ensure clean state
+    assert.strictEqual(isReminderEngineRunning(), false, 'Engine initially stopped');
+
+    const timer1 = startReminderEngine({ db, intervalMinutes: 10 });
+    assert.strictEqual(isReminderEngineRunning(), true, 'Engine running after first start');
+
+    const timer2 = startReminderEngine({ db, intervalMinutes: 10 });
+    assert.strictEqual(timer1, timer2, 'Second startReminderEngine call must return existing timer');
+
+    stopReminderEngine();
+    assert.strictEqual(isReminderEngineRunning(), false, 'Engine stopped after stopReminderEngine()');
+  });
+
+  it('notification_logs unique constraint atomically prevents duplicate notifications on same date', () => {
+    const testUserId = 1;
+    const testEntityId = 777;
+    const testType = 'event';
+    const testWindow = '30m';
+    const testDate = '2026-10-07';
+
+    // Clean any prior row
+    db.prepare(`
+      DELETE FROM notification_logs 
+      WHERE user_id = ? AND entity_id = ? AND entity_type = ? AND alert_window = ? AND notification_date = ?
+    `).run(testUserId, testEntityId, testType, testWindow, testDate);
+
+    const upsertStmt = db.prepare(`
+      INSERT INTO notification_logs (
+        user_id, entity_id, entity_type, alert_window, notification_date, status
+      )
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, entity_id, entity_type, alert_window, notification_date) DO UPDATE SET
+        sent_at = datetime('now'),
+        status = excluded.status;
+    `);
+
+    // First insert
+    upsertStmt.run(testUserId, testEntityId, testType, testWindow, testDate, 'SENT');
+    const row1 = db.prepare(`
+      SELECT * FROM notification_logs 
+      WHERE user_id = ? AND entity_id = ? AND entity_type = ? AND alert_window = ? AND notification_date = ?
+    `).get(testUserId, testEntityId, testType, testWindow, testDate);
+    assert.ok(row1, 'Row 1 inserted');
+    assert.strictEqual(row1.status, 'SENT');
+
+    // Duplicate insert with updated status (e.g. COMPLETED or re-run)
+    upsertStmt.run(testUserId, testEntityId, testType, testWindow, testDate, 'COMPLETED');
+    const allRows = db.prepare(`
+      SELECT * FROM notification_logs 
+      WHERE user_id = ? AND entity_id = ? AND entity_type = ? AND alert_window = ? AND notification_date = ?
+    `).all(testUserId, testEntityId, testType, testWindow, testDate);
+    assert.strictEqual(allRows.length, 1, 'Exactly one row must exist due to UNIQUE constraint');
+    assert.strictEqual(allRows[0].status, 'COMPLETED', 'Status updated atomically via ON CONFLICT');
+
+    // Cleanup
+    db.prepare(`
+      DELETE FROM notification_logs 
+      WHERE user_id = ? AND entity_id = ? AND entity_type = ? AND alert_window = ? AND notification_date = ?
+    `).run(testUserId, testEntityId, testType, testWindow, testDate);
   });
 
   // Clean test data & close server

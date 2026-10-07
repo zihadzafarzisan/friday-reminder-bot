@@ -55,12 +55,16 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE TABLE IF NOT EXISTS notification_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    event_id TEXT NOT NULL,          -- String event ID (e.g. '1', or 'ROUTINE_<slotId>_<YYYY-MM-DD>')
-    notification_type TEXT NOT NULL, -- '24H_BEFORE', '1H_BEFORE', '30M_BEFORE', '10M_BEFORE'
-    sent_at TEXT DEFAULT (datetime('now')),
-    status TEXT NOT NULL,            -- 'SENT', 'FAILED', 'SKIPPED', 'COMPLETED'
+    entity_id INTEGER NOT NULL DEFAULT 0,
+    entity_type TEXT NOT NULL DEFAULT 'event',         -- 'routine_slot' | 'event'
+    alert_window TEXT NOT NULL DEFAULT 'due',          -- '30m' | '10m' | 'due' | '1h' | '24h'
+    notification_date TEXT NOT NULL DEFAULT (date('now')), -- 'YYYY-MM-DD'
+    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status TEXT DEFAULT 'SENT',                         -- 'SENT', 'FAILED', 'SKIPPED', 'COMPLETED'
+    event_id TEXT,                                      -- String event ID for backwards compatibility
+    notification_type TEXT,                             -- Notification type string for backwards compatibility
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE(user_id, event_id, notification_type)
+    UNIQUE(user_id, entity_id, entity_type, alert_window, notification_date)
 );
 
 CREATE TABLE IF NOT EXISTS settings (
@@ -86,6 +90,7 @@ CREATE INDEX IF NOT EXISTS idx_courses_user ON courses(user_id);
 CREATE INDEX IF NOT EXISTS idx_routine_slots_user_day ON routine_slots(user_id, day_of_week);
 CREATE INDEX IF NOT EXISTS idx_events_user_time ON events(user_id, start_time);
 CREATE INDEX IF NOT EXISTS idx_notification_logs_user_event ON notification_logs(user_id, event_id);
+CREATE INDEX IF NOT EXISTS idx_notification_logs_dedup ON notification_logs(user_id, entity_id, entity_type, alert_window, notification_date);
 CREATE INDEX IF NOT EXISTS idx_users_discord ON users(discord_user_id);
 CREATE INDEX IF NOT EXISTS idx_users_pairing ON users(pairing_code);
 CREATE INDEX IF NOT EXISTS idx_faculty_initial ON faculty_consultations(faculty_initial);

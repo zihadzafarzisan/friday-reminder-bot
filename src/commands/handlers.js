@@ -755,16 +755,25 @@ export async function handleTaskButton(interaction, db = getDb()) {
   }
 
   // 3. Record in notification_logs to suppress remaining tiers
-  const suppressionTiers = ['COMPLETED', '24H_BEFORE', '1H_BEFORE', '30M_BEFORE', '10M_BEFORE'];
+  const suppressionTiers = [
+    { alert_window: 'due', legacy: 'COMPLETED' },
+    { alert_window: '24h', legacy: '24H_BEFORE' },
+    { alert_window: '1h', legacy: '1H_BEFORE' },
+    { alert_window: '30m', legacy: '30M_BEFORE' },
+    { alert_window: '10m', legacy: '10M_BEFORE' }
+  ];
+  const { dateStr } = getDhakaContext(new Date());
   const logStmt = db.prepare(`
-    INSERT INTO notification_logs (user_id, event_id, notification_type, status)
-    VALUES (?, ?, ?, 'COMPLETED')
-    ON CONFLICT(user_id, event_id, notification_type) DO UPDATE SET
+    INSERT INTO notification_logs (
+      user_id, entity_id, entity_type, alert_window, notification_date, status, event_id, notification_type
+    )
+    VALUES (?, ?, 'event', ?, ?, 'COMPLETED', ?, ?)
+    ON CONFLICT(user_id, entity_id, entity_type, alert_window, notification_date) DO UPDATE SET
       sent_at = datetime('now'),
       status = 'COMPLETED';
   `);
   for (const tier of suppressionTiers) {
-    logStmt.run(userId, String(eventId), tier);
+    logStmt.run(userId, eventId, tier.alert_window, dateStr, String(eventId), tier.legacy);
   }
 
   // 4. Update the original message embed and disable button

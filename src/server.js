@@ -659,10 +659,14 @@ export function createServer() {
 
       const testKey = `TEST_PING_${Date.now()}`;
       const status = sendResult.success ? 'SENT' : 'FAILED';
+      const { dateStr } = getDhakaContext(new Date());
       db.prepare(`
-        INSERT INTO notification_logs (user_id, event_id, notification_type, status)
-        VALUES (?, ?, 'TEST_ALERT', ?)
-      `).run(targetUserId, testKey, status);
+        INSERT INTO notification_logs (user_id, entity_id, entity_type, alert_window, notification_date, status, event_id, notification_type)
+        VALUES (?, 0, 'test', ?, ?, ?, ?, 'TEST_ALERT')
+        ON CONFLICT(user_id, entity_id, entity_type, alert_window, notification_date) DO UPDATE SET
+          sent_at = datetime('now'),
+          status = excluded.status;
+      `).run(targetUserId, `ping_${Date.now()}`, dateStr, status, testKey);
 
       if (!sendResult.success) {
         return res.status(500).json({ success: false, error: `Failed to dispatch Discord DM: ${sendResult.error}` });
@@ -724,11 +728,15 @@ export function createServer() {
       const sendResult = await sendDM(targetDiscordId, { embeds: [embed], components }, client);
       const testKey = `MANUAL_TEST_${ev.id}_${Date.now()}`;
       const status = sendResult.success ? 'SENT' : 'FAILED';
+      const { dateStr } = getDhakaContext(new Date());
 
       db.prepare(`
-        INSERT INTO notification_logs (user_id, event_id, notification_type, status)
-        VALUES (?, ?, 'TEST_ALERT', ?)
-      `).run(ev.user_id, testKey, status);
+        INSERT INTO notification_logs (user_id, entity_id, entity_type, alert_window, notification_date, status, event_id, notification_type)
+        VALUES (?, ?, 'event', ?, ?, ?, ?, 'TEST_ALERT')
+        ON CONFLICT(user_id, entity_id, entity_type, alert_window, notification_date) DO UPDATE SET
+          sent_at = datetime('now'),
+          status = excluded.status;
+      `).run(ev.user_id, ev.id, `manual_${Date.now()}`, dateStr, status, testKey);
 
       if (!sendResult.success) {
         return res.status(500).json({ success: false, error: `Failed to dispatch alert: ${sendResult.error}` });
@@ -1073,7 +1081,81 @@ export function createServer() {
     }
   });
 
-  // 19. DELETE /api/consultations/:id - Remove a consultation slot
+  // 19. PUT /api/consultations/:id - Update an existing consultation slot
+  app.put('/api/consultations/:id', (req, res) => {
+    try {
+      const slotId = parseInt(req.params.id, 10);
+      if (!slotId || isNaN(slotId)) {
+        return res.status(400).json({ success: false, error: 'Invalid consultation ID.' });
+      }
+
+      const existing = db.prepare('SELECT * FROM faculty_consultations WHERE id = ?').get(slotId);
+      if (!existing) {
+        return res.status(404).json({ success: false, error: 'Consultation slot not found.' });
+      }
+
+      const {
+        faculty_initial,
+        faculty_name,
+        day_of_week,
+        start_time,
+        end_time,
+        room,
+        contact_email,
+        consultation_link
+      } = req.body;
+
+      if (!faculty_initial || !String(faculty_initial).trim()) {
+        return res.status(400).json({ success: false, error: 'Faculty initial is required.' });
+      }
+      if (!day_of_week || !String(day_of_week).trim()) {
+        return res.status(400).json({ success: false, error: 'Day of week is required.' });
+      }
+      if (!start_time || !String(start_time).trim()) {
+        return res.status(400).json({ success: false, error: 'Start time is required.' });
+      }
+      if (!end_time || !String(end_time).trim()) {
+        return res.status(400).json({ success: false, error: 'End time is required.' });
+      }
+
+      const cleanInitial = String(faculty_initial).trim().toUpperCase();
+      const cleanName = faculty_name !== undefined ? (faculty_name ? String(faculty_name).trim() : null) : existing.faculty_name;
+      const cleanDay = String(day_of_week).trim().toUpperCase();
+      if (!DAYS_OF_WEEK.includes(cleanDay)) {
+        return res.status(400).json({ success: false, error: `Invalid day of week "${day_of_week}". Must be SUNDAY through SATURDAY.` });
+      }
+
+      const cleanStart = normalizeTimeTo24h(start_time);
+      const cleanEnd = normalizeTimeTo24h(end_time);
+      const cleanRoom = room !== undefined ? (room ? String(room).trim() : null) : existing.room;
+      const cleanEmail = contact_email !== undefined ? (contact_email ? String(contact_email).trim() : null) : existing.contact_email;
+      const cleanLink = consultation_link !== undefined ? (consultation_link ? String(consultation_link).trim() : null) : existing.consultation_link;
+
+      db.prepare(`
+        UPDATE faculty_consultations SET
+          faculty_initial = ?,
+          faculty_name = ?,
+          day_of_week = ?,
+          start_time = ?,
+          end_time = ?,
+          room = ?,
+          contact_email = ?,
+          consultation_link = ?
+        WHERE id = ?;
+      `).run(cleanInitial, cleanName, cleanDay, cleanStart, cleanEnd, cleanRoom, cleanEmail, cleanLink, slotId);
+
+      const updated = db.prepare('SELECT * FROM faculty_consultations WHERE id = ?').get(slotId);
+      res.json({
+        success: true,
+        message: 'Consultation slot updated successfully.',
+        data: updated
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 20. DELETE /api/consultations/:id - Remove a consultation slot
   app.delete('/api/consultations/:id', (req, res) => {
     try {
       const slotId = parseInt(req.params.id, 10);
