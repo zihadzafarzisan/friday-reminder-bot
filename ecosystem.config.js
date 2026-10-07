@@ -7,7 +7,7 @@ const apps = [
     env: {
       NODE_ENV: 'production',
       TIMEZONE: process.env.TIMEZONE || 'Asia/Dhaka',
-      ...(process.env.DB_PATH ? { DB_PATH: process.env.DB_PATH } : {})
+      DB_PATH: process.env.DB_PATH || ''
     }
   },
   {
@@ -20,7 +20,7 @@ const apps = [
       PORT: process.env.PORT || 3000,
       HOST: process.env.HOST || '0.0.0.0',
       TIMEZONE: process.env.TIMEZONE || 'Asia/Dhaka',
-      ...(process.env.DB_PATH ? { DB_PATH: process.env.DB_PATH } : {})
+      DB_PATH: process.env.DB_PATH || ''
     }
   }
 ];

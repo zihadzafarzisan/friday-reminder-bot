@@ -57,7 +57,7 @@ export async function handleInteraction(interaction, db = getDb()) {
       } else if (commandName === 'addtask') {
         await handleAddtaskCommand(interaction);
       } else if (commandName === 'consultation') {
-        await handleConsultationCommand(interaction);
+        await handleConsultationCommand(interaction, db);
       } else if (commandName === 'import') {
         await handleImportCommand(interaction, db);
       } else if (commandName === 'routine') {
@@ -821,9 +821,143 @@ export function buildConsultationModal() {
 }
 
 /**
- * Handles /consultation command by showing the lookup modal
+ * Queries faculty consultations with multi-tier fallback:
+ * 1. Exact faculty_initial match (case-insensitive)
+ * 2. Stripped alphanumeric initial (e.g. "M.S.I." -> "MSI")
+ * 3. Faculty name or initial substring search
  */
-export async function handleConsultationCommand(interaction) {
+export function queryFacultyConsultations(searchQuery, db = getDb()) {
+  if (!searchQuery || !String(searchQuery).trim()) return [];
+  const clean = String(searchQuery).trim();
+  const upper = clean.toUpperCase();
+  const stripped = upper.replace(/[^A-Z0-9]/g, '');
+
+  const orderBy = `
+    ORDER BY 
+      CASE UPPER(day_of_week)
+        WHEN 'SUNDAY' THEN 1
+        WHEN 'MONDAY' THEN 2
+        WHEN 'TUESDAY' THEN 3
+        WHEN 'WEDNESDAY' THEN 4
+        WHEN 'THURSDAY' THEN 5
+        WHEN 'FRIDAY' THEN 6
+        WHEN 'SATURDAY' THEN 7
+        ELSE 8
+      END,
+      start_time ASC;
+  `;
+
+  // 1. Try exact initial match (case-insensitive)
+  let slots = db.prepare(`
+    SELECT * FROM faculty_consultations 
+    WHERE faculty_initial = ? COLLATE NOCASE
+    ${orderBy}
+  `).all(clean);
+
+  if (slots.length > 0) return slots;
+
+  // 2. Try stripped alphanumeric initial (e.g. "M.S.I." -> "MSI")
+  if (stripped && stripped !== upper) {
+    slots = db.prepare(`
+      SELECT * FROM faculty_consultations 
+      WHERE faculty_initial = ? COLLATE NOCASE
+      ${orderBy}
+    `).all(stripped);
+    if (slots.length > 0) return slots;
+  }
+
+  // 3. Fallback: Search by faculty name or partial initial
+  slots = db.prepare(`
+    SELECT * FROM faculty_consultations 
+    WHERE faculty_name LIKE ? OR faculty_initial LIKE ?
+    ORDER BY 
+      faculty_initial ASC,
+      CASE UPPER(day_of_week)
+        WHEN 'SUNDAY' THEN 1
+        WHEN 'MONDAY' THEN 2
+        WHEN 'TUESDAY' THEN 3
+        WHEN 'WEDNESDAY' THEN 4
+        WHEN 'THURSDAY' THEN 5
+        WHEN 'FRIDAY' THEN 6
+        WHEN 'SATURDAY' THEN 7
+        ELSE 8
+      END,
+      start_time ASC;
+  `).all(`%${clean}%`, `%${clean}%`);
+
+  return slots;
+}
+
+/**
+ * Builds formatted Discord embed displaying faculty consultation schedule
+ */
+export function buildConsultationEmbed(slots, queryTerm) {
+  const facultyName = slots.find(s => s.faculty_name)?.faculty_name || null;
+  const initial = slots[0]?.faculty_initial || String(queryTerm).trim().toUpperCase();
+  const facultyEmail = slots.find(s => s.contact_email)?.contact_email || null;
+
+  const embedTitle = facultyName 
+    ? `👨‍🏫 Consultation Hours: ${facultyName} (${initial})`
+    : `👨‍🏫 Consultation Hours: ${initial}`;
+
+  const lines = [];
+  if (facultyEmail) {
+    lines.push(`📧 **Email:** \`${facultyEmail}\`\n`);
+  }
+
+  for (const slot of slots) {
+    const dayName = formatDayName(slot.day_of_week);
+    const dayPad = `${dayName}:`.padEnd(11, ' ');
+    const startFmt = formatTime12h(slot.start_time);
+    const endFmt = formatTime12h(slot.end_time);
+    const loc = formatLocation(slot);
+
+    lines.push(`• ${dayPad} ${startFmt} - ${endFmt} | ${loc}`);
+  }
+
+  return new EmbedBuilder()
+    .setTitle(embedTitle)
+    .setColor(0x6366F1)
+    .setDescription(lines.join('\n'))
+    .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
+    .setTimestamp();
+}
+
+/**
+ * Core handler to look up consultation hours and reply to interaction
+ */
+export async function handleConsultationLookup(interaction, queryTerm, db = getDb()) {
+  const clean = String(queryTerm || '').trim();
+  if (!clean) {
+    const msg = '⚠️ Please provide a faculty initial or name to look up.';
+    if (interaction.deferred) return interaction.editReply({ content: msg });
+    return interaction.reply({ content: msg, ephemeral: true });
+  }
+
+  const slots = queryFacultyConsultations(clean, db);
+
+  if (slots.length === 0) {
+    const notFoundMsg = `❌ No consultation hours found for faculty initial **${clean.toUpperCase()}**.\n💡 *Tip: Faculty office hours can be registered via the Web Dashboard at [Your Dashboard](${DASHBOARD_URL}).*`;
+    if (interaction.deferred) return interaction.editReply({ content: notFoundMsg });
+    return interaction.reply({ content: notFoundMsg, ephemeral: true });
+  }
+
+  const embed = buildConsultationEmbed(slots, clean);
+  if (interaction.deferred) {
+    return interaction.editReply({ embeds: [embed] });
+  }
+  return interaction.reply({ embeds: [embed], ephemeral: true });
+}
+
+/**
+ * Handles /consultation command: looks up directly if initial option supplied, or shows modal
+ */
+export async function handleConsultationCommand(interaction, db = getDb()) {
+  const optionInitial = interaction.options?.getString ? interaction.options.getString('initial') : null;
+  if (optionInitial && optionInitial.trim()) {
+    return handleConsultationLookup(interaction, optionInitial.trim(), db);
+  }
+
   const modal = buildConsultationModal();
   await interaction.showModal(modal);
 }
@@ -894,69 +1028,7 @@ export async function handleConsultationModalSubmit(interaction, db = getDb()) {
     rawInitial = interaction.fields.faculty_initial;
   }
 
-  if (!rawInitial || !rawInitial.trim()) {
-    return interaction.reply({
-      content: '⚠️ Please provide a faculty initial to look up.',
-      ephemeral: true
-    });
-  }
-
-  const initial = rawInitial.trim().toUpperCase();
-
-  const slots = db.prepare(`
-    SELECT * FROM faculty_consultations 
-    WHERE faculty_initial = ? COLLATE NOCASE
-    ORDER BY 
-      CASE UPPER(day_of_week)
-        WHEN 'SUNDAY' THEN 1
-        WHEN 'MONDAY' THEN 2
-        WHEN 'TUESDAY' THEN 3
-        WHEN 'WEDNESDAY' THEN 4
-        WHEN 'THURSDAY' THEN 5
-        WHEN 'FRIDAY' THEN 6
-        WHEN 'SATURDAY' THEN 7
-        ELSE 8
-      END,
-      start_time ASC;
-  `).all(initial);
-
-  if (slots.length === 0) {
-    return interaction.reply({
-      content: `❌ No consultation hours found for faculty initial **${initial}**.`,
-      ephemeral: true
-    });
-  }
-
-  const facultyName = slots.find(s => s.faculty_name)?.faculty_name || null;
-  const facultyEmail = slots.find(s => s.contact_email)?.contact_email || null;
-
-  const embedTitle = facultyName 
-    ? `👨‍🏫 Consultation Hours: ${facultyName} (${initial})`
-    : `👨‍🏫 Consultation Hours: ${initial}`;
-
-  const lines = [];
-  if (facultyEmail) {
-    lines.push(`📧 **Email:** \`${facultyEmail}\`\n`);
-  }
-
-  for (const slot of slots) {
-    const dayName = formatDayName(slot.day_of_week);
-    const dayPad = `${dayName}:`.padEnd(11, ' ');
-    const startFmt = formatTime12h(slot.start_time);
-    const endFmt = formatTime12h(slot.end_time);
-    const loc = formatLocation(slot);
-
-    lines.push(`• ${dayPad} ${startFmt} - ${endFmt} | ${loc}`);
-  }
-
-  const embed = new EmbedBuilder()
-    .setTitle(embedTitle)
-    .setColor(0x6366F1)
-    .setDescription(lines.join('\n'))
-    .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
-    .setTimestamp();
-
-  await interaction.reply({ embeds: [embed], ephemeral: true });
+  return handleConsultationLookup(interaction, rawInitial, db);
 }
 
 /**

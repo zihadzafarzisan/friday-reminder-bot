@@ -25,7 +25,13 @@ export const slashCommands = [
     .setDescription('Add a custom academic deadline, quiz, or assignment'),
   new SlashCommandBuilder()
     .setName('consultation')
-    .setDescription('Look up faculty consultation hours and office rooms/links'),
+    .setDescription('Look up faculty consultation hours and office rooms/links')
+    .addStringOption(option =>
+      option
+        .setName('initial')
+        .setDescription('Faculty initial or name to look up (e.g. MSI, TSM)')
+        .setRequired(false)
+    ),
   new SlashCommandBuilder()
     .setName('import')
     .setDescription('Import your BRACU course schedule directly by uploading schedule_raw.json')

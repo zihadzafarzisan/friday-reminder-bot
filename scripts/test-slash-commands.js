@@ -1,4 +1,4 @@
-import { getDb } from '../src/db/index.js';
+import { initTestEnvironment, cleanDatabaseFiles } from '../src/db/test-helper.js';
 import { 
   handleTodayCommand, 
   handleNextCommand, 
@@ -85,7 +85,7 @@ async function runSlashCommandTests() {
   console.log('  TESTING DISCORD COMMANDS, MODALS & BUTTONS');
   console.log('====================================================\n');
 
-  const db = getDb();
+  const { db, cleanup } = initTestEnvironment();
   let passed = 0;
   let total = 0;
 
@@ -230,6 +230,8 @@ async function runSlashCommandTests() {
   console.log(`  RESULTS: ${passed}/${total} TESTS PASSED (${Math.round((passed/total)*100)}%)`);
   console.log(`====================================================`);
 
+  cleanup();
+
   if (passed === total) {
     process.exit(0);
   } else {
@@ -239,5 +241,8 @@ async function runSlashCommandTests() {
 
 runSlashCommandTests().catch(err => {
   console.error('[FATAL] Command & Modal test runner failed:', err);
+  try {
+    cleanDatabaseFiles(process.env.DB_PATH);
+  } catch {}
   process.exit(1);
 });

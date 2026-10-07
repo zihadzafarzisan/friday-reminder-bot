@@ -1,6 +1,5 @@
 import assert from 'assert';
-import { getDb } from '../src/db/index.js';
-import { runMigration } from '../src/db/migrate.js';
+import { initTestEnvironment, cleanDatabaseFiles } from '../src/db/test-helper.js';
 import { 
   handleImportCommand,
   handleRoutineCommand,
@@ -102,8 +101,7 @@ async function runTests() {
   console.log('  TEST SUITE: 100% DISCORD-NATIVE AUTOMATION');
   console.log('====================================================\n');
 
-  const db = getDb();
-  runMigration(db);
+  const { db, cleanup } = initTestEnvironment();
 
   const testDiscordId = '777666555444333222';
   db.prepare('DELETE FROM users WHERE discord_user_id = ?').run(testDiscordId);
@@ -379,6 +377,7 @@ async function runTests() {
 
   // Clean test user data
   db.prepare('DELETE FROM users WHERE discord_user_id = ?').run(testDiscordId);
+  cleanup();
 
   console.log('\n====================================================');
   console.log(`  DISCORD-NATIVE TEST RESULTS: ${passed}/${passed + failed} PASSED (${Math.round((passed / (passed + failed)) * 100)}%)`);
@@ -391,5 +390,8 @@ async function runTests() {
 
 runTests().catch(err => {
   console.error('[!] Test suite crashed:', err);
+  try {
+    cleanDatabaseFiles(process.env.DB_PATH);
+  } catch {}
   process.exit(1);
 });

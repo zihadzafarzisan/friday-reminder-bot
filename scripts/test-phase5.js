@@ -1,6 +1,6 @@
 import assert from 'assert';
 import http from 'http';
-import { getDb } from '../src/db/index.js';
+import { initTestEnvironment, cleanDatabaseFiles } from '../src/db/test-helper.js';
 import { runMigration } from '../src/db/migrate.js';
 import { createServer } from '../src/server.js';
 import { closeDiscordClient } from '../src/bot.js';
@@ -72,8 +72,7 @@ async function runTests() {
   console.log('  TESTING PHASE 5: MULTI-TENANT ARCHITECTURE & PORTAL');
   console.log('====================================================\n');
 
-  const db = getDb();
-  runMigration(db);
+  const { db, cleanup } = initTestEnvironment();
 
   // --- TEST GROUP 1: Database Schema & Default User #1 Preservation ---
   console.log('--- TEST GROUP 1: Database Schema & User #1 Data Preservation ---');
@@ -354,6 +353,7 @@ async function runTests() {
 
   server.close();
   await closeDiscordClient();
+  cleanup();
 
   console.log('\n====================================================');
   console.log(`  PHASE 5 TEST RESULTS: ${passed}/${passed + failed} TESTS PASSED (${Math.round((passed / (passed + failed)) * 100)}%)`);
@@ -365,5 +365,8 @@ async function runTests() {
 runTests().catch(async (err) => {
   console.error('[!] Test suite fatal error:', err);
   await closeDiscordClient();
+  try {
+    cleanDatabaseFiles(process.env.DB_PATH);
+  } catch {}
   process.exit(1);
 });

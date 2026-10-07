@@ -272,6 +272,29 @@ export function runMigration(db = getDb()) {
     CREATE INDEX IF NOT EXISTS idx_faculty_initial ON faculty_consultations(faculty_initial);
   `);
 
+  // 9b. Seed default faculty consultations if missing
+  const msiExists = db.prepare("SELECT count(*) as c FROM faculty_consultations WHERE faculty_initial = 'MSI' COLLATE NOCASE").get().c;
+  if (msiExists === 0) {
+    db.prepare(`
+      INSERT INTO faculty_consultations (
+        faculty_initial, faculty_name, day_of_week, start_time, end_time, room, contact_email, consultation_link
+      ) VALUES 
+        ('MSI', 'Dr. Muhammad Saiful Islam', 'SUNDAY', '10:00', '11:30', 'UB0802', 'saiful.islam@bracu.ac.bd', 'https://meet.google.com/msi-consult'),
+        ('MSI', 'Dr. Muhammad Saiful Islam', 'TUESDAY', '14:00', '15:30', 'UB0802', 'saiful.islam@bracu.ac.bd', 'https://meet.google.com/msi-consult');
+    `).run();
+  }
+
+  const tsmExists = db.prepare("SELECT count(*) as c FROM faculty_consultations WHERE faculty_initial = 'TSM' COLLATE NOCASE").get().c;
+  if (tsmExists === 0) {
+    db.prepare(`
+      INSERT INTO faculty_consultations (
+        faculty_initial, faculty_name, day_of_week, start_time, end_time, room, contact_email, consultation_link
+      ) VALUES 
+        ('TSM', 'Dr. Tareq Sujan', 'MONDAY', '11:00', '12:30', 'UB0821', 'tsm@bracu.ac.bd', NULL),
+        ('TSM', 'Dr. Tareq Sujan', 'WEDNESDAY', '11:00', '12:30', 'UB0821', 'tsm@bracu.ac.bd', NULL);
+    `).run();
+  }
+
   // 10. Re-enable foreign keys
   db.exec('PRAGMA foreign_keys = ON;');
   console.log('[+] Phase 5 migration completed successfully.');

@@ -1,13 +1,14 @@
 import assert from 'assert';
 import http from 'http';
-import { getDb } from '../src/db/index.js';
+import { initTestEnvironment, cleanDatabaseFiles } from '../src/db/test-helper.js';
 import { runMigration } from '../src/db/migrate.js';
 import { createServer } from '../src/server.js';
 import { 
   buildConsultationModal,
   handleConsultationCommand,
   handleConsultationModalSubmit,
-  handleInteraction 
+  handleInteraction,
+  queryFacultyConsultations
 } from '../src/commands/handlers.js';
 import { slashCommands } from '../src/commands/register.js';
 import { 
@@ -68,11 +69,15 @@ async function request(server, path, method = 'GET', body = null, headers = {}) 
   });
 }
 
-function createMockChatInteraction(commandName) {
+function createMockChatInteraction(commandName, options = {}) {
   let replyPayload = null;
   let shownModal = null;
   return {
     commandName,
+    options: {
+      getString: (name) => options[name] || null,
+      ...options
+    },
     user: { id: '1328051283080380559', username: 'TestStudent' },
     isChatInputCommand: () => true,
     isModalSubmit: () => false,
@@ -115,8 +120,7 @@ async function runTests() {
   console.log('  TEST SUITE: FACULTY CONSULTATION & DISCORD MODAL');
   console.log('====================================================\n');
 
-  const db = getDb();
-  runMigration(db);
+  const { db, cleanup } = initTestEnvironment();
 
   // Clean test faculty data
   db.prepare("DELETE FROM faculty_consultations WHERE faculty_initial IN ('MSI', 'TSM', 'TESTFAC')").run();
@@ -231,11 +235,41 @@ async function runTests() {
     assert.ok(modalInter.getReply().embeds, 'Router should process modal submission and return embed');
   });
 
+  await itAsync('handleConsultationCommand directly retrieves hours if initial option supplied', async () => {
+    const interaction = createMockChatInteraction('consultation', { initial: 'msi' });
+    await handleConsultationCommand(interaction, db);
+    const reply = interaction.getReply();
+    assert.ok(reply, 'Reply must be sent directly without modal');
+    assert.ok(reply.embeds && reply.embeds.length > 0, 'Embed must be provided');
+    assert.ok(reply.embeds[0].data.title.includes('MSI'));
+  });
+
+  it('queryFacultyConsultations matches by faculty name or stripped initial', () => {
+    const byName = queryFacultyConsultations('Saiful', db);
+    assert.ok(byName.length > 0, 'Should find slots by partial faculty name');
+    assert.strictEqual(byName[0].faculty_initial, 'MSI');
+
+    const byDotted = queryFacultyConsultations('M.S.I.', db);
+    assert.ok(byDotted.length > 0, 'Should find slots by dotted initial');
+    assert.strictEqual(byDotted[0].faculty_initial, 'MSI');
+  });
+
   // --- TEST GROUP 3: Web Endpoints (GET and POST /api/consultations) ---
   console.log('\n--- TEST GROUP 3: Web API Endpoints (GET and POST /api/consultations) ---');
 
   const app = createServer();
   const server = app.listen(0);
+
+  await itAsync('GET /ping returns 200 OK text/plain', async () => {
+    const res = await request(server, '/ping', 'GET');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body, 'OK');
+  });
+
+  await itAsync('HEAD /ping returns 200 OK', async () => {
+    const res = await request(server, '/ping', 'HEAD');
+    assert.strictEqual(res.status, 200);
+  });
 
   await itAsync('POST /api/consultations rejects request missing required fields', async () => {
     const res = await request(server, '/api/consultations', 'POST', {
@@ -515,9 +549,10 @@ async function runTests() {
     `).run(testUserId, testEntityId, testType, testWindow, testDate);
   });
 
-  // Clean test data & close server
-  db.prepare("DELETE FROM faculty_consultations WHERE faculty_initial IN ('MSI', 'TSM', 'TESTFAC')").run();
+  // Clean test data, restore default seeded consultations & close server
+  db.prepare("DELETE FROM faculty_consultations WHERE faculty_initial IN ('TESTFAC', 'MRA', 'AAN')").run();
   server.close();
+  cleanup();
 
   console.log('\n====================================================');
   console.log(`  CONSULTATION TEST RESULTS: ${passed}/${passed + failed} PASSED (${Math.round((passed / (passed + failed)) * 100)}%)`);
@@ -530,5 +565,8 @@ async function runTests() {
 
 runTests().catch(err => {
   console.error('[!] Test suite crashed:', err);
+  try {
+    cleanDatabaseFiles(process.env.DB_PATH);
+  } catch {}
   process.exit(1);
 });

@@ -130,6 +130,13 @@ function getRequestUserId(req, db) {
 
 export function createServer() {
   const app = express();
+
+  // Ultra-lightweight keepalive ping (must be first, supports GET and HEAD)
+  app.all('/ping', (req, res) => {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.status(200).send('OK');
+  });
+
   const db = getDb();
 
   // CORS Middleware for Bookmarklet access
@@ -503,7 +510,7 @@ export function createServer() {
       let dmDispatched = false;
       if (process.env.DISCORD_BOT_TOKEN && user.discord_user_id) {
         try {
-          const client = await getDiscordClient(process.env.DISCORD_BOT_TOKEN);
+          const client = await getDiscordClient(process.env.DISCORD_BOT_TOKEN, { attachListeners: false });
           const courseLines = result.importedCourses.map(c => 
             `• **${c.code}** (Sec ${c.section})${c.faculty ? ` • 👨‍🏫 ${c.faculty}` : ''}${c.room ? ` • 📍 ${c.room}` : ''}`
           ).join('\n') || 'Courses imported';
@@ -653,7 +660,7 @@ export function createServer() {
         return res.status(400).json({ success: false, error: 'DISCORD_BOT_TOKEN is not configured in .env.' });
       }
 
-      const client = await getDiscordClient(process.env.DISCORD_BOT_TOKEN);
+      const client = await getDiscordClient(process.env.DISCORD_BOT_TOKEN, { attachListeners: false });
       const embed = buildTestEmbed(client.user?.tag || 'FRIDAY');
       const sendResult = await sendDM(targetDiscordId, { embeds: [embed] }, client);
 
@@ -709,7 +716,7 @@ export function createServer() {
         return res.status(400).json({ success: false, error: 'DISCORD_BOT_TOKEN is not configured in .env.' });
       }
 
-      const client = await getDiscordClient(process.env.DISCORD_BOT_TOKEN);
+      const client = await getDiscordClient(process.env.DISCORD_BOT_TOKEN, { attachListeners: false });
       const isExam = ev.type === 'MIDTERM' || ev.type === 'FINAL';
       const course = ev.code ? { code: ev.code, name: ev.name, section: ev.section, faculty: ev.faculty } : null;
       const eventData = {
@@ -864,8 +871,11 @@ export function createServer() {
       const params = [];
 
       if (initial && String(initial).trim()) {
-        query += ' WHERE faculty_initial = ? COLLATE NOCASE';
-        params.push(String(initial).trim());
+        const cleanInitial = String(initial).trim();
+        query += ` WHERE faculty_initial = ? COLLATE NOCASE
+                     OR faculty_name LIKE ?
+                     OR faculty_initial LIKE ?`;
+        params.push(cleanInitial, `%${cleanInitial}%`, `%${cleanInitial}%`);
       }
 
       query += ` ORDER BY faculty_initial ASC,

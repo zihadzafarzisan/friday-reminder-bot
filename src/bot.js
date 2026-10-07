@@ -7,7 +7,7 @@ let clientInstance = null;
 /**
  * Initializes and logs in the Discord Client with minimal required intents
  */
-export async function getDiscordClient(token) {
+export async function getDiscordClient(token, { attachListeners = true } = {}) {
   if (clientInstance && clientInstance.isReady()) {
     return clientInstance;
   }
@@ -28,18 +28,22 @@ export async function getDiscordClient(token) {
     ]
   });
 
-  // Attach slash commands interaction handler
-  client.on('interactionCreate', async (interaction) => {
-    await handleInteraction(interaction);
-  });
+  // Attach slash commands interaction handler if enabled
+  if (attachListeners) {
+    client.on('interactionCreate', async (interaction) => {
+      await handleInteraction(interaction);
+    });
+  }
 
   await new Promise((resolve, reject) => {
     client.once('clientReady', async () => {
       console.log(`[+] Discord Bot logged in as: ${client.user.tag}`);
-      try {
-        await registerCommands(botToken, client.user.id);
-      } catch (err) {
-        console.warn(`[!] Slash commands auto-registration notice: ${err.message}`);
+      if (attachListeners) {
+        try {
+          await registerCommands(botToken, client.user.id);
+        } catch (err) {
+          console.warn(`[!] Slash commands auto-registration notice: ${err.message}`);
+        }
       }
       resolve();
     });

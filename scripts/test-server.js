@@ -1,5 +1,7 @@
+import { initTestEnvironment } from '../src/db/test-helper.js';
 import { createServer } from '../src/server.js';
 
+const { cleanup } = initTestEnvironment();
 const app = createServer();
 const server = app.listen(3099, async () => {
   console.log('Test server listening on port 3099');
@@ -49,10 +51,15 @@ const server = app.listen(3099, async () => {
     console.log('[PASS] /api/logs count:', logsJson.data.length);
 
     console.log('\n>>> ALL 6 API ENDPOINTS VERIFIED SUCCESSFULLY! <<<');
+    server.close(() => {
+      cleanup();
+      process.exit(0);
+    });
   } catch (err) {
     console.error('[FAIL] API test error:', err);
-  } finally {
-    server.close();
-    process.exit(0);
+    server.close(() => {
+      cleanup();
+      process.exit(1);
+    });
   }
 });

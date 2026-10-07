@@ -1,11 +1,11 @@
-import { getDb } from '../src/db/index.js';
+import { initTestEnvironment } from '../src/db/test-helper.js';
 import { runEvaluationTick, getDhakaContext } from '../src/reminder-engine.js';
 
 console.log('Testing Dhaka Context:');
 const ctx = getDhakaContext();
 console.log(ctx);
 
-const db = getDb();
+const { db, cleanup } = initTestEnvironment();
 
 // Simulate Monday at 10:30:00 (CSE230 starts at 11:00:00, diff = 30m)
 const simDate = new Date('2026-10-05T10:30:00+06:00');
@@ -25,4 +25,5 @@ console.log('\n--- Simulation 3: 24h Before MAT216 Midterm (dry run) ---');
 const res3 = await runEvaluationTick({ db, referenceDate: simDate3, dryRun: true });
 console.log('Dispatches triggered:', res3);
 
+cleanup();
 console.log('\nAll simulation tests passed!');

@@ -1,4 +1,4 @@
-import { getDb } from '../src/db/index.js';
+import { initTestEnvironment, cleanDatabaseFiles } from '../src/db/test-helper.js';
 import { createServer } from '../src/server.js';
 import { runEvaluationTick, getDhakaContext, getStoredDiscordUserId } from '../src/reminder-engine.js';
 import http from 'http';
@@ -39,7 +39,7 @@ async function runTests() {
   console.log('  RUNNING PHASE 4.1 BUG FIXES & SETTINGS TEST SUITE');
   console.log('====================================================\n');
 
-  const db = getDb();
+  const { db, cleanup } = initTestEnvironment();
   const app = createServer();
   let passed = 0;
   let total = 0;
@@ -225,6 +225,8 @@ async function runTests() {
   console.log(`  RESULTS: ${passed}/${total} TESTS PASSED (${Math.round((passed/total)*100)}%)`);
   console.log(`====================================================`);
 
+  cleanup();
+
   if (passed === total) {
     process.exit(0);
   } else {
@@ -234,5 +236,8 @@ async function runTests() {
 
 runTests().catch(err => {
   console.error('[FATAL] Test runner failed:', err);
+  try {
+    cleanDatabaseFiles(process.env.DB_PATH);
+  } catch {}
   process.exit(1);
 });

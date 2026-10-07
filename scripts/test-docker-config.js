@@ -2,7 +2,8 @@ import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getDb, getDbPath, closeDb, DEFAULT_DB_PATH } from '../src/db/index.js';
+import { getDb, getDbPath, closeDb, DEFAULT_DB_PATH, TEST_DB_PATH } from '../src/db/index.js';
+import { cleanDatabaseFiles } from '../src/db/test-helper.js';
 import { createServer } from '../src/server.js';
 import { apps } from '../ecosystem.config.js';
 
@@ -36,6 +37,7 @@ async function itAsync(desc, fn) {
 }
 
 async function runTests() {
+  process.env.NODE_ENV = 'test';
   console.log('====================================================');
   console.log('  TESTING DOCKER & CLOUD VOLUME CONFIGURATION');
   console.log('====================================================\n');
@@ -205,6 +207,9 @@ async function runTests() {
     assert.ok('DB_PATH' in dashApp.env, 'DB_PATH must be in env block');
   });
 
+  closeDb();
+  cleanDatabaseFiles(TEST_DB_PATH);
+
   console.log('\n====================================================');
   console.log(`  DOCKER CONFIG TEST RESULTS: ${passed}/${passed + failed} TESTS PASSED (${Math.round((passed / (passed + failed)) * 100)}%)`);
   console.log('====================================================');
@@ -214,5 +219,9 @@ async function runTests() {
 
 runTests().catch(err => {
   console.error('[!] Test suite fatal error:', err);
+  try {
+    closeDb();
+    cleanDatabaseFiles(TEST_DB_PATH);
+  } catch {}
   process.exit(1);
 });
