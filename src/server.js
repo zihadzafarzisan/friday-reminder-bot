@@ -8,6 +8,7 @@ import { normalizeAndIngest, normalizeAndIngestPayload } from './normalize.js';
 import { getDiscordClient, sendDM, buildTestEmbed, buildExamAlertEmbed, buildTaskAlertEmbed } from './bot.js';
 import { buildTaskActionRow } from './commands/handlers.js';
 import { EmbedBuilder } from 'discord.js';
+import { initBot, stopBot } from './index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1193,18 +1194,90 @@ export function createServer() {
   return app;
 }
 
+let activeHttpServer = null;
+let shutdownListenersRegistered = false;
+let isShuttingDown = false;
+
+/**
+ * Stops both the Express HTTP listener and Discord bot client cleanly
+ */
+export async function stopServer(server = activeHttpServer) {
+  if (server) {
+    if (server.listening) {
+      await new Promise((resolve) => {
+        server.close((err) => {
+          if (err && err.code !== 'ERR_SERVER_NOT_RUNNING') {
+            console.warn('[!] Error closing HTTP listener:', err.message);
+          } else {
+            console.log('[-] HTTP listener closed.');
+          }
+          resolve();
+        });
+      });
+    } else {
+      try {
+        server.close(() => {});
+      } catch {}
+    }
+    if (server === activeHttpServer) {
+      activeHttpServer = null;
+    }
+  }
+
+  try {
+    await stopBot();
+    console.log('[-] Discord client and reminder loop stopped cleanly.');
+  } catch (err) {
+    console.warn('[!] Error stopping bot during server shutdown:', err.message);
+  }
+}
+
+/**
+ * Handles OS signal graceful termination (SIGINT, SIGTERM)
+ */
+export async function shutdownGracefully(signal = 'SIGTERM') {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log(`\n[*] Received ${signal}. Initiating graceful shutdown...`);
+  await stopServer();
+  console.log('[+] Graceful shutdown complete.');
+  process.exit(0);
+}
+
+/**
+ * Attaches SIGINT and SIGTERM handlers to cleanly terminate Express and the Discord bot
+ */
+function setupGracefulShutdown(server) {
+  activeHttpServer = server;
+
+  if (!shutdownListenersRegistered) {
+    shutdownListenersRegistered = true;
+    process.once('SIGINT', () => shutdownGracefully('SIGINT'));
+    process.once('SIGTERM', () => shutdownGracefully('SIGTERM'));
+  }
+}
+
 export function startServer(port = process.env.PORT || 3000, host = process.env.HOST || '0.0.0.0') {
+  // Initialize Discord bot and reminder loop in the same process
+  // Guarded against duplicate bot logins in initBot()
+  initBot().catch((err) => {
+    console.error('[!] Discord bot initialization warning:', err.message);
+  });
+
   const app = createServer();
   const targetPort = Number(port);
   const targetHost = String(host).trim();
 
   const server = app.listen(targetPort, targetHost, () => {
     console.log('====================================================');
-    console.log(`  FRIDAY ACADEMIC ASSISTANT — WEB CONTROL PANEL RUNNING`);
+    console.log(`  FRIDAY ACADEMIC ASSISTANT — UNIFIED WEB + BOT RUNNING`);
     console.log(`  Dashboard URL: ${DASHBOARD_URL}`);
     console.log(`  Bound to Network: ${targetHost}:${targetPort}`);
     console.log('====================================================');
   });
+
+  setupGracefulShutdown(server);
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
@@ -1222,8 +1295,8 @@ export function startServer(port = process.env.PORT || 3000, host = process.env.
 // Direct execution or PM2 process
 const isDirectExecution =
   process.env.pm_id !== undefined ||
-  (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) ||
-  (process.argv[1] && process.argv[1].endsWith('server.js'));
+  (process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === fileURLToPath(import.meta.url).toLowerCase()) ||
+  (process.argv[1] && path.resolve(process.argv[1] + '.js').toLowerCase() === fileURLToPath(import.meta.url).toLowerCase());
 
 if (isDirectExecution) {
   startServer();

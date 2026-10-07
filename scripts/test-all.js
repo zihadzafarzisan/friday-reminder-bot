@@ -14,7 +14,8 @@ const testSuites = [
   { name: 'Phase 5 Multi-Tenant Architecture', script: 'scripts/test-phase5.js' },
   { name: 'Faculty Consultation Lookup', script: 'scripts/test-consultations.js' },
   { name: '100% Discord-Native Automation', script: 'scripts/test-discord-native.js' },
-  { name: 'Docker & Volume Configuration', script: 'scripts/test-docker-config.js' }
+  { name: 'Docker & Volume Configuration', script: 'scripts/test-docker-config.js' },
+  { name: 'Unified Server & Bot Architecture', script: 'scripts/test-unified-process.js' }
 ];
 
 function runTest(suite) {

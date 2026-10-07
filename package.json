@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node src/server.js",
     "dashboard": "node src/server.js",
     "dev": "node scripts/dev.js",
     "fetch:schedule": "node scripts/fetch-schedule.js",

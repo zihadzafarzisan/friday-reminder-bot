@@ -3,6 +3,7 @@ import { registerCommands } from './commands/register.js';
 import { handleInteraction } from './commands/handlers.js';
 
 let clientInstance = null;
+let clientLoginPromise = null;
 
 /**
  * Initializes and logs in the Discord Client with minimal required intents
@@ -10,6 +11,9 @@ let clientInstance = null;
 export async function getDiscordClient(token, { attachListeners = true } = {}) {
   if (clientInstance && clientInstance.isReady()) {
     return clientInstance;
+  }
+  if (clientLoginPromise) {
+    return clientLoginPromise;
   }
 
   const botToken = token || process.env.DISCORD_BOT_TOKEN;
@@ -35,7 +39,7 @@ export async function getDiscordClient(token, { attachListeners = true } = {}) {
     });
   }
 
-  await new Promise((resolve, reject) => {
+  clientLoginPromise = new Promise((resolve, reject) => {
     client.once('clientReady', async () => {
       console.log(`[+] Discord Bot logged in as: ${client.user.tag}`);
       if (attachListeners) {
@@ -45,16 +49,21 @@ export async function getDiscordClient(token, { attachListeners = true } = {}) {
           console.warn(`[!] Slash commands auto-registration notice: ${err.message}`);
         }
       }
-      resolve();
+      clientInstance = client;
+      clientLoginPromise = null;
+      resolve(client);
     });
     client.once('error', (err) => {
+      clientLoginPromise = null;
       reject(err);
     });
-    client.login(botToken).catch(reject);
+    client.login(botToken).catch((err) => {
+      clientLoginPromise = null;
+      reject(err);
+    });
   });
 
-  clientInstance = client;
-  return clientInstance;
+  return clientLoginPromise;
 }
 
 /**
@@ -185,4 +194,9 @@ export async function closeDiscordClient() {
     await clientInstance.destroy();
     clientInstance = null;
   }
+  clientLoginPromise = null;
+}
+
+export function getActiveDiscordClient() {
+  return clientInstance;
 }
