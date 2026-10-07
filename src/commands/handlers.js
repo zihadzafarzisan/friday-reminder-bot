@@ -52,6 +52,7 @@ export async function handleInteraction(interaction, db = getDb()) {
         await handleLoginCommand(interaction, db);
       } else if (commandName === 'today') {
         await handleTodayCommand(interaction, db);
+      } else if (commandName === 'next') {
         await handleNextCommand(interaction, db);
       } else if (commandName === 'deadlines') {
         await handleDeadlinesCommand(interaction, db);
@@ -66,7 +67,7 @@ export async function handleInteraction(interaction, db = getDb()) {
       } else if (commandName === 'reset') {
         await handleResetCommand(interaction, db);
       } else {
-        await interaction.reply({ content: `Unknown command: /${commandName}`, ephemeral: true });
+        await interaction.reply({ content: `Unknown command: /${commandName}`, flags: 64 }).catch(() => {});
       }
     } else if (interaction.isModalSubmit && interaction.isModalSubmit()) {
       if (interaction.customId === 'modal_add_task') {
@@ -85,13 +86,24 @@ export async function handleInteraction(interaction, db = getDb()) {
         await handleTaskButton(interaction, db);
       }
     }
-  } catch (err) {
-    console.error('[!] Error executing interaction:', err);
-    const errorMsg = '⚠️ An error occurred while processing your request.';
-    if (interaction.deferred || interaction.replied) {
-      await interaction.followUp({ content: errorMsg, ephemeral: true });
-    } else {
-      await interaction.reply({ content: errorMsg, ephemeral: true });
+  } catch (error) {
+    console.error(`[!] Error executing command ${interaction.commandName || interaction.customId}:`, error);
+
+    // Defensive check before attempting error reply
+    try {
+      const errorMessage = {
+        content: '⚠️ An error occurred while processing your request. Please try again.',
+        flags: 64 // Ephemeral flag (avoids deprecation warning)
+      };
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(errorMessage).catch(() => {});
+      } else {
+        await interaction.reply(errorMessage).catch(() => {});
+      }
+    } catch (replyError) {
+      // Silently catch so interaction expiry NEVER crashes the Node process
+      console.warn('[!] Could not deliver error message to Discord interaction:', replyError.message);
     }
   }
 }

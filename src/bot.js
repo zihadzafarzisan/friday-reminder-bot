@@ -32,10 +32,19 @@ export async function getDiscordClient(token, { attachListeners = true } = {}) {
     ]
   });
 
+  // Attach persistent client error handler to prevent unhandled EventEmitter error crashes
+  client.on('error', (err) => {
+    console.error('[!] Discord client error:', err.message);
+  });
+
   // Attach slash commands interaction handler if enabled
   if (attachListeners) {
     client.on('interactionCreate', async (interaction) => {
-      await handleInteraction(interaction);
+      try {
+        await handleInteraction(interaction);
+      } catch (err) {
+        console.error('[!] Unhandled top-level interaction error:', err);
+      }
     });
   }
 

@@ -1511,6 +1511,10 @@ function setupGracefulShutdown(server) {
     shutdownListenersRegistered = true;
     process.once('SIGINT', () => shutdownGracefully('SIGINT'));
     process.once('SIGTERM', () => shutdownGracefully('SIGTERM'));
+
+    process.on('unhandledRejection', (reason) => {
+      console.error('[!] Process unhandled promise rejection guarded:', reason?.message || reason);
+    });
   }
 }
 

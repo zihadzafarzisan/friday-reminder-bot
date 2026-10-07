@@ -232,6 +232,74 @@ async function runSlashCommandTests() {
     db.prepare('DELETE FROM events WHERE id = ?').run(routerEv.id);
   }
 
+  // 11. Test Error Hardening & Crash Prevention
+  console.log('\n--- TEST GROUP 11: Error Hardening & Crash Prevention ---');
+  
+  // Test /today replies once
+  const routerToday = createMockChatInteraction('today');
+  await handleInteraction(routerToday, db);
+  assert(routerToday.getReply() !== null, 'Router correctly handles /today with single reply');
+
+  // Test /next replies
+  const routerNext = createMockChatInteraction('next');
+  await handleInteraction(routerNext, db);
+  assert(routerNext.getReply() !== null, 'Router correctly handles /next');
+
+  // Test DiscordAPIError[40060] (Already acknowledged) resilience
+  const acknowledgedInteraction = {
+    commandName: 'broken_command',
+    isChatInputCommand: () => true,
+    isModalSubmit: () => false,
+    isButton: () => false,
+    deferred: true,
+    replied: true,
+    followUp: async (payload) => {
+      // followUp succeeds or fails safely
+      return payload;
+    },
+    reply: async () => {
+      const err = new Error('Interaction has already been acknowledged.');
+      err.code = 40060;
+      throw err;
+    }
+  };
+
+  let threw40060 = false;
+  try {
+    await handleInteraction(acknowledgedInteraction, db);
+  } catch (err) {
+    threw40060 = true;
+  }
+  assert(!threw40060, 'handleInteraction safely catches DiscordAPIError[40060] without throwing');
+
+  // Test DiscordAPIError[10062] (Unknown interaction / expired) resilience
+  const expiredInteraction = {
+    commandName: 'expired_command',
+    isChatInputCommand: () => true,
+    isModalSubmit: () => false,
+    isButton: () => false,
+    deferred: false,
+    replied: false,
+    reply: async () => {
+      const err = new Error('Unknown interaction');
+      err.code = 10062;
+      throw err;
+    },
+    followUp: async () => {
+      const err = new Error('Unknown interaction');
+      err.code = 10062;
+      throw err;
+    }
+  };
+
+  let threw10062 = false;
+  try {
+    await handleInteraction(expiredInteraction, db);
+  } catch (err) {
+    threw10062 = true;
+  }
+  assert(!threw10062, 'handleInteraction safely catches DiscordAPIError[10062] and expired replies without crashing Node process');
+
   console.log(`\n====================================================`);
   console.log(`  RESULTS: ${passed}/${total} TESTS PASSED (${Math.round((passed/total)*100)}%)`);
   console.log(`====================================================`);
