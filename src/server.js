@@ -1,4 +1,6 @@
 import express from 'express';
+import cookieParser from 'cookie-parser';
+import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import 'dotenv/config';
@@ -115,14 +117,83 @@ export function parseBulkConsultationsText(text) {
 }
 
 /**
- * Extracts the targeted user_id from query parameters or headers, defaulting to User #1
+ * Resolves the authenticated user from the session cookie.
+ * Returns the user object or null if not authenticated.
  */
-function getRequestUserId(req, db) {
-  if (req.query.user_id) {
+export function getSessionUser(req, db) {
+  const token = req.cookies?.friday_session;
+  if (!token) return null;
+
+  try {
+    const session = db.prepare(`
+      SELECT s.*, u.id as uid, u.discord_user_id, u.username, u.pairing_code
+      FROM sessions s
+      JOIN users u ON s.user_id = u.id
+      WHERE s.token = ? AND s.expires_at > datetime('now')
+    `).get(token);
+
+    if (!session) return null;
+
+    return {
+      id: session.uid,
+      discord_user_id: session.discord_user_id,
+      username: session.username,
+      pairing_code: session.pairing_code
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Creates a new session for the given user and sets the cookie on the response.
+ * Sessions expire after 30 days.
+ */
+export function createSession(userId, res, db) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Clean up any expired sessions for this user
+  try {
+    db.prepare('DELETE FROM sessions WHERE user_id = ? AND expires_at <= datetime("now")').run(userId);
+  } catch {}
+
+  db.prepare(`
+    INSERT INTO sessions (user_id, token, expires_at)
+    VALUES (?, ?, ?)
+  `).run(userId, token, expiresAt);
+
+  res.cookie('friday_session', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    path: '/'
+  });
+
+  return token;
+}
+
+/**
+ * Extracts the targeted user_id. Prioritizes authenticated session for strict tenant isolation.
+ */
+export function getRequestUserId(req, db) {
+  // Priority 1: Authenticated session (strongest isolation, cannot be overridden by params)
+  if (req.authenticatedUser) {
+    return req.authenticatedUser.id;
+  }
+  const sessionUser = getSessionUser(req, db);
+  if (sessionUser) {
+    req.authenticatedUser = sessionUser;
+    return sessionUser.id;
+  }
+  // Priority 2: Query param (for test environments or explicit overrides in tests)
+  if (req.query?.user_id) {
     const parsed = parseInt(req.query.user_id, 10);
     if (!isNaN(parsed)) return parsed;
   }
-  if (req.headers['x-user-id']) {
+  // Priority 3: Header (for test environments or explicit overrides in tests)
+  if (req.headers && req.headers['x-user-id']) {
     const parsed = parseInt(req.headers['x-user-id'], 10);
     if (!isNaN(parsed)) return parsed;
   }
@@ -152,7 +223,155 @@ export function createServer() {
   });
 
   app.use(express.json({ limit: '10mb' }));
-  app.use(express.static(PUBLIC_DIR));
+  app.use(cookieParser());
+
+  // Attach session user to req if present
+  app.use((req, res, next) => {
+    const user = getSessionUser(req, db);
+    if (user) {
+      req.authenticatedUser = user;
+    }
+    next();
+  });
+
+  // Serve static assets without defaulting to index.html (so / is protected)
+  app.use(express.static(PUBLIC_DIR, { index: false }));
+
+  // GET /login - Serve login landing page or redirect to / if already authenticated
+  app.get('/login', (req, res) => {
+    if (req.authenticatedUser) {
+      return res.redirect('/');
+    }
+    res.sendFile(path.join(PUBLIC_DIR, 'login.html'));
+  });
+
+  // GET / - Dashboard home, requires authentication in production
+  app.get('/', (req, res) => {
+    if (!req.authenticatedUser && process.env.NODE_ENV !== 'test') {
+      return res.redirect('/login');
+    }
+    res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  });
+
+  // POST /api/auth/login - Validate one-time passkey & create session
+  app.post('/api/auth/login', (req, res) => {
+    try {
+      const code = req.body?.code || req.body?.passkey;
+      if (!code || !String(code).trim()) {
+        return res.status(400).json({ success: false, error: 'Authentication passkey is required.' });
+      }
+
+      const cleanCode = String(code).trim().toUpperCase();
+
+      const authCode = db.prepare(`
+        SELECT * FROM auth_codes
+        WHERE code = ? AND used = 0 AND expires_at > datetime('now')
+      `).get(cleanCode);
+
+      if (!authCode) {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid or expired passkey. Please generate a new one with /login on Discord.'
+        });
+      }
+
+      // Resolve matching user by user_id, discord_id, or discord_user_id
+      let user = null;
+      if (authCode.user_id) {
+        user = db.prepare('SELECT * FROM users WHERE id = ?').get(authCode.user_id);
+      }
+      if (!user && authCode.discord_id) {
+        user = db.prepare('SELECT * FROM users WHERE discord_id = ? OR discord_user_id = ?').get(authCode.discord_id, authCode.discord_id);
+      }
+      if (!user) {
+        // Fallback: create user if discord_id exists
+        const discordId = authCode.discord_id || '1328051283080380559';
+        const info = db.prepare(`
+          INSERT INTO users (discord_user_id, discord_id, username, created_at)
+          VALUES (?, ?, 'Student', datetime('now'))
+        `).run(discordId, discordId);
+        user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
+      }
+
+      // Mark code as used
+      db.prepare('UPDATE auth_codes SET used = 1 WHERE id = ?').run(authCode.id);
+
+      // Create session
+      createSession(user.id, res, db);
+
+      res.json({
+        success: true,
+        message: 'Login successful!',
+        user: {
+          id: user.id,
+          username: user.username || 'Student',
+          discord_user_id: user.discord_user_id || user.discord_id
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // POST /api/auth/logout - Destroy session & clear cookie
+  app.post('/api/auth/logout', (req, res) => {
+    try {
+      const token = req.cookies?.friday_session;
+      if (token) {
+        db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+      }
+      res.clearCookie('friday_session', { path: '/' });
+      res.json({ success: true, message: 'Logged out successfully.' });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // GET /api/auth/me - Verify current session
+  app.get('/api/auth/me', (req, res) => {
+    try {
+      const user = req.authenticatedUser || getSessionUser(req, db);
+      if (!user) {
+        return res.status(401).json({ success: false, authenticated: false });
+      }
+      res.json({
+        success: true,
+        authenticated: true,
+        user: {
+          id: user.id,
+          username: user.username || 'Student',
+          discord_user_id: user.discord_user_id
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // Route protection middleware for /api/*
+  app.use('/api', (req, res, next) => {
+    // Endpoints that do not require session auth:
+    if (
+      req.path.startsWith('/auth/') ||
+      req.path === '/user/import-schedule'
+    ) {
+      return next();
+    }
+
+    if (req.authenticatedUser) {
+      return next();
+    }
+
+    // In test environment without explicit auth enforcement, allow access for legacy test suites
+    if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-auth']) {
+      return next();
+    }
+
+    return res.status(401).json({
+      success: false,
+      error: 'Authentication required. Please log in at /login.'
+    });
+  });
 
   // 1. GET /api/users - List all registered student profiles
   app.get('/api/users', (req, res) => {
@@ -327,7 +546,7 @@ export function createServer() {
   // 6. POST /api/events - Create custom event
   app.post('/api/events', (req, res) => {
     try {
-      const targetUserId = req.body.user_id ? parseInt(req.body.user_id, 10) : getRequestUserId(req, db);
+      const targetUserId = req.authenticatedUser ? req.authenticatedUser.id : (req.body.user_id ? parseInt(req.body.user_id, 10) : getRequestUserId(req, db));
       const { course_id, type, title, start_time, end_time, room } = req.body;
 
       if (!title || !title.trim()) {
@@ -384,6 +603,7 @@ export function createServer() {
         return res.status(400).json({ success: false, error: 'Invalid event ID.' });
       }
 
+      const targetUserId = getRequestUserId(req, db);
       const existing = db.prepare('SELECT id, is_custom, title, user_id FROM events WHERE id = ?').get(eventId);
       if (!existing) {
         return res.status(404).json({ success: false, error: 'Event not found.' });
@@ -391,6 +611,10 @@ export function createServer() {
 
       if (!existing.is_custom) {
         return res.status(403).json({ success: false, error: 'Cannot edit official university exam schedule.' });
+      }
+
+      if (existing.user_id !== targetUserId) {
+        return res.status(403).json({ success: false, error: 'Access denied: You cannot edit another student\'s event.' });
       }
 
       const { course_id, type, title, start_time, end_time, room } = req.body;
@@ -455,13 +679,18 @@ export function createServer() {
         return res.status(400).json({ success: false, error: 'Invalid event ID.' });
       }
 
-      const event = db.prepare('SELECT id, is_custom, title FROM events WHERE id = ?').get(eventId);
+      const targetUserId = getRequestUserId(req, db);
+      const event = db.prepare('SELECT id, is_custom, title, user_id FROM events WHERE id = ?').get(eventId);
       if (!event) {
         return res.status(404).json({ success: false, error: 'Event not found.' });
       }
 
       if (!event.is_custom) {
         return res.status(403).json({ success: false, error: 'Cannot delete system-synced university exam events.' });
+      }
+
+      if (event.user_id !== targetUserId) {
+        return res.status(403).json({ success: false, error: 'Access denied: You cannot delete another student\'s event.' });
       }
 
       db.prepare('DELETE FROM events WHERE id = ?').run(eventId);
@@ -589,7 +818,7 @@ export function createServer() {
   app.post('/api/settings', (req, res) => {
     try {
       const { discord_user_id, passcode, user_name, user_id } = req.body;
-      const targetUserId = user_id ? parseInt(user_id, 10) : getRequestUserId(req, db);
+      const targetUserId = req.authenticatedUser ? req.authenticatedUser.id : (user_id ? parseInt(user_id, 10) : getRequestUserId(req, db));
 
       const upsertStmt = db.prepare(`
         INSERT INTO settings (key, value, updated_at)
@@ -707,6 +936,11 @@ export function createServer() {
         return res.status(404).json({ success: false, error: 'Event not found.' });
       }
 
+      const targetUserId = getRequestUserId(req, db);
+      if (ev.user_id !== targetUserId) {
+        return res.status(403).json({ success: false, error: 'Access denied: Event belongs to another student.' });
+      }
+
       const user = db.prepare('SELECT * FROM users WHERE id = ?').get(ev.user_id);
       const targetDiscordId = user?.discord_user_id || getStoredDiscordUserId(db);
 
@@ -759,7 +993,7 @@ export function createServer() {
   // 15. GET /api/logs - Recent notification dispatch logs
   app.get('/api/logs', (req, res) => {
     try {
-      const targetUserId = req.query.user_id ? parseInt(req.query.user_id, 10) : null;
+      const targetUserId = req.authenticatedUser ? req.authenticatedUser.id : (req.query.user_id ? parseInt(req.query.user_id, 10) : null);
       const query = targetUserId
         ? 'SELECT n.id, n.user_id, n.event_id, n.notification_type, n.sent_at, n.status, e.title AS event_title, e.type AS event_type, c.code AS event_course FROM notification_logs n LEFT JOIN events e ON n.event_id = CAST(e.id AS TEXT) LEFT JOIN courses c ON e.course_id = c.id WHERE n.user_id = ? ORDER BY n.id DESC LIMIT 30;'
         : 'SELECT n.id, n.user_id, n.event_id, n.notification_type, n.sent_at, n.status, e.title AS event_title, e.type AS event_type, c.code AS event_course FROM notification_logs n LEFT JOIN events e ON n.event_id = CAST(e.id AS TEXT) LEFT JOIN courses c ON e.course_id = c.id ORDER BY n.id DESC LIMIT 30;';
@@ -1186,8 +1420,15 @@ export function createServer() {
     }
   });
 
-  // Fallback to index.html for SPA routing
+  // Fallback for SPA routing (redirects unauthenticated users to /login)
   app.use((req, res) => {
+    if (req.path === '/login' || req.path === '/login.html') {
+      return res.sendFile(path.join(PUBLIC_DIR, 'login.html'));
+    }
+    const user = req.authenticatedUser || getSessionUser(req, db);
+    if (!user && process.env.NODE_ENV !== 'test') {
+      return res.redirect('/login');
+    }
     res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
   });
 

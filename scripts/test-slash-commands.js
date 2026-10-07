@@ -106,6 +106,12 @@ async function runSlashCommandTests() {
   assert(commandNames.includes('next'), 'slashCommands includes /next');
   assert(commandNames.includes('deadlines'), 'slashCommands includes /deadlines');
   assert(commandNames.includes('addtask'), 'slashCommands includes /addtask');
+  assert(commandNames.includes('login'), 'slashCommands includes /login');
+  assert(commandNames.includes('link'), 'slashCommands includes /link');
+  const loginCmd = slashCommands.find(c => c.name === 'login');
+  const linkCmd = slashCommands.find(c => c.name === 'link');
+  assert(loginCmd.description === 'Get your one-time passkey and link to access your academic web dashboard.', '/login description matches required string');
+  assert(linkCmd.description === 'Get your one-time passkey and link to access your academic web dashboard.', '/link description matches required string');
 
   // 2. Test /today command handler
   console.log('\n--- TEST GROUP 2: /today Command Handler ---');

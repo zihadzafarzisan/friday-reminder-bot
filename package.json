@@ -16,6 +16,7 @@
     "test:consultations": "node scripts/test-consultations.js",
     "test:discord": "node scripts/test-discord-native.js",
     "test:docker": "node scripts/test-docker-config.js",
+    "test:auth": "node scripts/test-auth.js",
     "test:all": "node scripts/test-all.js",
     "commands:register": "node src/commands/register.js",
     "pm2:start": "pm2 start ecosystem.config.js",
@@ -24,6 +25,7 @@
     "pm2:logs": "pm2 logs"
   },
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
     "express": "^5.0.0"

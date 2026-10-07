@@ -46,11 +46,12 @@ export async function handleInteraction(interaction, db = getDb()) {
   try {
     if (interaction.isChatInputCommand && interaction.isChatInputCommand()) {
       const { commandName } = interaction;
-      if (commandName === 'start' || commandName === 'link') {
+      if (commandName === 'start') {
         await handleStartCommand(interaction, db);
+      } else if (commandName === 'login' || commandName === 'link') {
+        await handleLoginCommand(interaction, db);
       } else if (commandName === 'today') {
         await handleTodayCommand(interaction, db);
-      } else if (commandName === 'next') {
         await handleNextCommand(interaction, db);
       } else if (commandName === 'deadlines') {
         await handleDeadlinesCommand(interaction, db);
@@ -162,6 +163,158 @@ export async function handleStartCommand(interaction, db = getDb()) {
 
   return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
 }
+
+/**
+ * Defensive check to ensure the auth_codes table and index exist
+ * before insertion, allowing this command to work independently of unfinished migrations.
+ */
+export function ensureAuthCodesTable(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS auth_codes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      discord_id TEXT NOT NULL,
+      code TEXT UNIQUE NOT NULL,
+      expires_at DATETIME NOT NULL,
+      used INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_auth_codes_code ON auth_codes(code);
+  `);
+
+  try {
+    const authCols = db.prepare("PRAGMA table_info('auth_codes')").all().map(c => c.name);
+    if (!authCols.includes('discord_id')) {
+      db.exec('ALTER TABLE auth_codes ADD COLUMN discord_id TEXT;');
+    }
+    if (!authCols.includes('user_id')) {
+      db.exec('ALTER TABLE auth_codes ADD COLUMN user_id INTEGER;');
+    }
+
+    const userCols = db.prepare("PRAGMA table_info('users')").all().map(c => c.name);
+    if (!userCols.includes('discord_id')) {
+      db.exec('ALTER TABLE users ADD COLUMN discord_id TEXT;');
+    }
+    if (!userCols.includes('discord_user_id')) {
+      db.exec('ALTER TABLE users ADD COLUMN discord_user_id TEXT;');
+    }
+  } catch {}
+}
+
+/**
+ * /login (alias /link): Generate a one-time authentication passkey for web dashboard login.
+ * The code expires after 10 minutes and can only be used once.
+ */
+export async function handleLoginCommand(interaction, db = getDb()) {
+  // Defensive check: ensure auth_codes table and index exist
+  ensureAuthCodesTable(db);
+
+  const discordUserId = interaction.user?.id || '1328051283080380559';
+  const username = interaction.user?.username || 'Student';
+
+  // Ensure user exists in the database
+  let user = db.prepare('SELECT * FROM users WHERE discord_user_id = ? OR discord_id = ?').get(discordUserId, discordUserId);
+
+  if (!user) {
+    const pairingCode = generatePairingCode();
+    db.prepare(`
+      INSERT INTO users (discord_user_id, discord_id, username, pairing_code, created_at)
+      VALUES (?, ?, ?, ?, datetime('now'))
+    `).run(discordUserId, discordUserId, username, pairingCode);
+    user = db.prepare('SELECT * FROM users WHERE discord_user_id = ? OR discord_id = ?').get(discordUserId, discordUserId);
+  } else {
+    let updateNeeded = false;
+    let newUsername = user.username;
+    let newDiscordId = user.discord_id;
+    if (user.username !== username) {
+      newUsername = username;
+      updateNeeded = true;
+    }
+    if (!user.discord_id) {
+      newDiscordId = discordUserId;
+      updateNeeded = true;
+    }
+    if (updateNeeded) {
+      db.prepare('UPDATE users SET username = ?, discord_id = COALESCE(discord_id, ?) WHERE id = ?').run(newUsername, newDiscordId, user.id);
+      user.username = newUsername;
+      user.discord_id = newDiscordId;
+    }
+  }
+
+  // Invalidate any previous unused auth codes for this user
+  db.prepare(`
+    UPDATE auth_codes 
+    SET used = 1 
+    WHERE used = 0 AND (
+      discord_id = ? OR 
+      (? IS NOT NULL AND user_id = ?)
+    )
+  `).run(discordUserId, user?.id || null, user?.id || null);
+
+  // Generate a new 6-character uppercase hex auth code valid for 10 minutes
+  const authCode = crypto.randomBytes(3).toString('hex').toUpperCase();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
+  const unixSec = Math.floor((Date.now() + 10 * 60 * 1000) / 1000);
+
+  const authCols = db.prepare("PRAGMA table_info('auth_codes')").all().map(c => c.name);
+  if (authCols.includes('user_id') && authCols.includes('discord_id')) {
+    db.prepare(`
+      INSERT INTO auth_codes (discord_id, user_id, code, expires_at, used)
+      VALUES (?, ?, ?, ?, 0)
+    `).run(discordUserId, user.id, authCode, expiresAt);
+  } else if (authCols.includes('discord_id')) {
+    db.prepare(`
+      INSERT INTO auth_codes (discord_id, code, expires_at, used)
+      VALUES (?, ?, ?, 0)
+    `).run(discordUserId, authCode, expiresAt);
+  } else {
+    db.prepare(`
+      INSERT INTO auth_codes (user_id, code, expires_at, used)
+      VALUES (?, ?, ?, 0)
+    `).run(user.id, authCode, expiresAt);
+  }
+
+  const embed = new EmbedBuilder()
+    .setTitle('🔐 FRIDAY Web Login Passkey')
+    .setColor(0x6366F1)
+    .setDescription(
+      `Hello **${username}**! Here is your one-time passkey for the FRIDAY web dashboard.\n\n` +
+      `This code will expire in **10 minutes** and can only be used once.`
+    )
+    .addFields(
+      {
+        name: '🔑 Your One-Time Passkey',
+        value: `\`\`\`${authCode}\`\`\``,
+        inline: false
+      },
+      {
+        name: '🌐 Web Login Portal',
+        value: `[Open Login Page](${DASHBOARD_URL}/login)`,
+        inline: false
+      },
+      {
+        name: '📋 Quick Login Guide',
+        value:
+          `1. Open [${DASHBOARD_URL}/login](${DASHBOARD_URL}/login)\n` +
+          `2. Enter your passkey: \`${authCode}\`\n` +
+          `3. Click **Sign In** to access your academic dashboard.\n\n` +
+          `*⏱️ Code expires at <t:${unixSec}:t> (<t:${unixSec}:R>)*`,
+        inline: false
+      }
+    )
+    .setFooter({ text: 'FRIDAY Academic Assistant • Secure Discord Authentication' })
+    .setTimestamp();
+
+  const loginButton = new ButtonBuilder()
+    .setLabel('Open Login Portal')
+    .setStyle(ButtonStyle.Link)
+    .setURL(`${DASHBOARD_URL}/login`);
+
+  const row = new ActionRowBuilder().addComponents(loginButton);
+
+  return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+}
+
+export const handleLinkCommand = handleLoginCommand;
 
 /**
  * /today: View today's class schedule, room numbers, and timings (scoped to user)

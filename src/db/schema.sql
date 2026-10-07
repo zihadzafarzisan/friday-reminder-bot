@@ -3,6 +3,8 @@
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     discord_user_id TEXT UNIQUE NOT NULL,
+    discord_id TEXT,
+    username TEXT,
     pairing_code TEXT UNIQUE,
     created_at TEXT DEFAULT (datetime('now'))
 );
@@ -86,6 +88,26 @@ CREATE TABLE IF NOT EXISTS faculty_consultations (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS auth_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    discord_id TEXT,
+    user_id INTEGER,
+    code TEXT UNIQUE NOT NULL,
+    expires_at TEXT NOT NULL,
+    used INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    expires_at TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_courses_user ON courses(user_id);
 CREATE INDEX IF NOT EXISTS idx_routine_slots_user_day ON routine_slots(user_id, day_of_week);
 CREATE INDEX IF NOT EXISTS idx_events_user_time ON events(user_id, start_time);
@@ -94,3 +116,8 @@ CREATE INDEX IF NOT EXISTS idx_notification_logs_dedup ON notification_logs(user
 CREATE INDEX IF NOT EXISTS idx_users_discord ON users(discord_user_id);
 CREATE INDEX IF NOT EXISTS idx_users_pairing ON users(pairing_code);
 CREATE INDEX IF NOT EXISTS idx_faculty_initial ON faculty_consultations(faculty_initial);
+CREATE INDEX IF NOT EXISTS idx_auth_codes_code ON auth_codes(code);
+CREATE INDEX IF NOT EXISTS idx_auth_codes_user ON auth_codes(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+

@@ -295,6 +295,55 @@ export function runMigration(db = getDb()) {
     `).run();
   }
 
+  // 9c. Ensure auth_codes table exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS auth_codes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      discord_id TEXT,
+      user_id INTEGER,
+      code TEXT UNIQUE NOT NULL,
+      expires_at TEXT NOT NULL,
+      used INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_auth_codes_code ON auth_codes(code);
+  `);
+
+  if (hasTable(db, 'auth_codes')) {
+    if (!hasColumn(db, 'auth_codes', 'discord_id')) {
+      db.exec('ALTER TABLE auth_codes ADD COLUMN discord_id TEXT;');
+      console.log('[+] Added discord_id column to auth_codes table.');
+    }
+  }
+
+  // 9d. Ensure sessions table exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token TEXT UNIQUE NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
+    CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+  `);
+
+  // 9e. Ensure username column exists on users table
+  if (!hasColumn(db, 'users', 'username')) {
+    db.exec(`ALTER TABLE users ADD COLUMN username TEXT;`);
+    console.log('[+] Added username column to users table.');
+  }
+
+  // 9f. Ensure discord_id column exists on users table (synced with discord_user_id)
+  if (!hasColumn(db, 'users', 'discord_id')) {
+    db.exec(`ALTER TABLE users ADD COLUMN discord_id TEXT;`);
+    db.exec(`UPDATE users SET discord_id = discord_user_id WHERE discord_id IS NULL;`);
+    console.log('[+] Added discord_id column to users table.');
+  }
+
   // 10. Re-enable foreign keys
   db.exec('PRAGMA foreign_keys = ON;');
   console.log('[+] Phase 5 migration completed successfully.');

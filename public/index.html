@@ -930,6 +930,9 @@
       <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="triggerTestPing(event)">
         ⚡ Test Alert
       </button>
+      <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="handleLogout(event)" title="Sign out of FRIDAY">
+        🚪 Sign Out
+      </button>
     </div>
   </header>
 
@@ -1427,6 +1430,10 @@
     async function checkAuthGate() {
       try {
         const res = await fetch(`/api/settings?user_id=${activeUserId}`);
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return false;
+        }
         const json = await res.json();
         if (json.success && json.data.has_passcode) {
           const isAuthed = sessionStorage.getItem('friday_authenticated') === '1';
@@ -1471,6 +1478,20 @@
 
     // Load initial data
     async function loadDashboard() {
+      try {
+        const meRes = await fetch('/api/auth/me');
+        if (meRes.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+        if (meRes.ok) {
+          const meJson = await meRes.json();
+          if (meJson.authenticated && meJson.user?.id) {
+            activeUserId = meJson.user.id;
+          }
+        }
+      } catch {}
+
       const authorized = await checkAuthGate();
       if (!authorized) return;
 
@@ -2407,6 +2428,14 @@
         btn.disabled = false;
         btn.textContent = '⚡ Batch Import Consultation Slots';
       }
+    }
+
+    async function handleLogout(e) {
+      if (e) e.preventDefault();
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch {}
+      window.location.href = '/login';
     }
 
     // Check URL hash for direct tab navigation (e.g. #import)
