@@ -14,6 +14,8 @@ import { getDb } from '../db/index.js';
 import { getDhakaContext } from '../reminder-engine.js';
 import { normalizeAndIngestPayload } from '../normalize.js';
 
+export const DASHBOARD_URL = process.env.DASHBOARD_URL || 'https://friday.alwaysdata.net';
+
 /**
  * Generates a clean 6-character uppercase hex pairing code (e.g. BRC-E4B29A)
  */
@@ -119,10 +121,12 @@ export async function handleStartCommand(interaction, db = getDb()) {
   const eventCount = db.prepare('SELECT count(*) as c FROM events WHERE user_id = ?').get(user.id)?.c || 0;
 
   const embed = new EmbedBuilder()
-    .setTitle('🎓 Welcome to BRACU Connect!')
+    .setTitle('FRIDAY Academic Assistant')
     .setColor(0x6366F1)
     .setDescription(
-      `Hello **${username}**! Your Discord account is linked to FRIDAY.\n\n` +
+      `**Well, well! Look who summoned FRIDAY!**\n\n` +
+      `Hello **${username}**! I'm FRIDAY, your daily academic assistant.\n\n` +
+      `Your Discord account is linked to FRIDAY.\n` +
       `Use your personal pairing code below to import your class schedule into FRIDAY.`
     )
     .addFields(
@@ -132,24 +136,31 @@ export async function handleStartCommand(interaction, db = getDb()) {
         inline: false
       },
       {
-        name: '🌐 Web Ingestion Portal',
-        value: `[Open Schedule Import Portal](http://localhost:3000/#import)\n*(Open in your browser while the local server is running)*`,
+        name: '🌐 Dashboard Link',
+        value: `[Your Dashboard](${DASHBOARD_URL})`,
         inline: false
       },
       {
         name: '📋 Quick Import Guide',
         value: 
-          `1️⃣ Open **[BRACU Connect Portal](http://localhost:3000/#import)**.\n` +
-          `2️⃣ Paste your Pairing Code: \`${user.pairing_code}\`\n` +
-          `3️⃣ Upload \`schedule_raw.json\` or use the 1-Click Bookmarklet on connect.bracu.ac.bd.\n\n` +
+          `1. Open [Your Dashboard](${DASHBOARD_URL}) and navigate to the Import Schedule tab.\n` +
+          `2. Paste your Pairing Code: \`${user.pairing_code}\`\n` +
+          `3. Upload \`schedule_raw.json\` or use the consultation tools.\n\n` +
           `*Current Status: **${courseCount}** course(s) and **${eventCount}** deadline(s) linked.*`,
         inline: false
       }
     )
-    .setFooter({ text: 'BRACU Connect • Multi-Tenant • Asia/Dhaka (+06:00)' })
+    .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
     .setTimestamp();
 
-  return interaction.reply({ embeds: [embed], ephemeral: true });
+  const linkButton = new ButtonBuilder()
+    .setLabel('Your Dashboard')
+    .setStyle(ButtonStyle.Link)
+    .setURL(DASHBOARD_URL);
+
+  const row = new ActionRowBuilder().addComponents(linkButton);
+
+  return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
 }
 
 /**
@@ -203,7 +214,7 @@ export async function handleTodayCommand(interaction, db = getDb()) {
   const totalCourses = db.prepare('SELECT count(*) as c FROM courses WHERE user_id = ?').get(user.id)?.c || 0;
   if (totalCourses === 0 && events.length === 0) {
     return interaction.reply({
-      content: `ℹ️ You haven't imported your schedule yet! Run **/start** or visit http://localhost:3000/#import using your code \`${user.pairing_code}\` to upload your courses.`,
+      content: `ℹ️ You haven't imported your schedule yet! Run **/start** or visit ${DASHBOARD_URL}/#import using your code \`${user.pairing_code}\` to upload your courses.`,
       ephemeral: true
     });
   }
@@ -214,7 +225,7 @@ export async function handleTodayCommand(interaction, db = getDb()) {
       .setTitle(`📅 Today's Schedule — ${dayOfWeek}`)
       .setDescription(`🎉 **No scheduled classes or deadlines today!**\nEnjoy your free day to relax or catch up on coursework.`)
       .setColor(0x10B981) // Emerald Green
-      .setFooter({ text: `BRACU Connect • ${dateStr} (Asia/Dhaka)` })
+      .setFooter({ text: `FRIDAY Academic Assistant • ${dateStr} (Asia/Dhaka)` })
       .setTimestamp();
 
     return interaction.reply({ embeds: [embed] });
@@ -223,7 +234,7 @@ export async function handleTodayCommand(interaction, db = getDb()) {
   const embed = new EmbedBuilder()
     .setTitle(`📅 Today's Schedule — ${dayOfWeek} (${dateStr})`)
     .setColor(0x6366F1) // Indigo
-    .setFooter({ text: 'BRACU Connect • Asia/Dhaka (+06:00)' })
+    .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
     .setTimestamp();
 
   if (slots.length > 0) {
@@ -394,7 +405,7 @@ export async function handleNextCommand(interaction, db = getDb()) {
       .setTitle('⏳ Next Academic Event')
       .setDescription('No upcoming classes, exams, or deadlines found on your schedule.')
       .setColor(0x9CA3AF)
-      .setFooter({ text: 'BRACU Connect • Asia/Dhaka (+06:00)' })
+      .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
       .setTimestamp();
 
     return interaction.reply({ embeds: [embed] });
@@ -435,7 +446,7 @@ export async function handleNextCommand(interaction, db = getDb()) {
     inline: false
   });
 
-  embed.setFooter({ text: 'BRACU Connect • Asia/Dhaka (+06:00)' }).setTimestamp();
+  embed.setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' }).setTimestamp();
 
   return interaction.reply({ embeds: [embed] });
 }
@@ -478,7 +489,7 @@ export async function handleDeadlinesCommand(interaction, db = getDb()) {
       .setTitle('📝 Upcoming Academic Deadlines')
       .setDescription('🎉 **You are all caught up!**\nNo upcoming midterms, finals, quizzes, or assignments found in your schedule.')
       .setColor(0x10B981)
-      .setFooter({ text: 'BRACU Connect • Asia/Dhaka (+06:00)' })
+      .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
       .setTimestamp();
 
     return interaction.reply({ embeds: [embed] });
@@ -500,7 +511,7 @@ export async function handleDeadlinesCommand(interaction, db = getDb()) {
     .setTitle(`📝 Upcoming Academic Deadlines (${upcoming.length})`)
     .setDescription('Here is your active schedule of upcoming exams, quizzes, and project deadlines:')
     .setColor(0x6366F1)
-    .setFooter({ text: 'BRACU Connect • Asia/Dhaka (+06:00)' })
+    .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
     .setTimestamp();
 
   if (exams.length > 0) {
@@ -699,7 +710,7 @@ export async function handleTaskModalSubmit(interaction, db = getDb()) {
         inline: false 
       }
     )
-    .setFooter({ text: 'BRACU Connect • Asia/Dhaka (+06:00)' })
+    .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
     .setTimestamp();
 
   return interaction.reply({ embeds: [embed] });
@@ -760,7 +771,7 @@ export async function handleTaskButton(interaction, db = getDb()) {
   const originalEmbed = interaction.message.embeds[0];
   const updatedEmbed = EmbedBuilder.from(originalEmbed || {})
     .setColor(0x10B981)
-    .setFooter({ text: `✅ Marked Completed by ${interaction.user.username} • BRACU Connect` });
+    .setFooter({ text: `✅ Marked Completed by ${interaction.user.username} • FRIDAY Academic Assistant` });
 
   const disabledBtn = new ButtonBuilder()
     .setCustomId(`completed_${eventId}`)
@@ -809,6 +820,61 @@ export async function handleConsultationCommand(interaction) {
 }
 
 /**
+ * Helper to capitalize day of week name (e.g. SUNDAY -> Sunday)
+ */
+export function formatDayName(day) {
+  if (!day) return '';
+  const s = String(day).trim().toLowerCase();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
+ * Normalizes and formats time to 12-hour AM/PM format (e.g. 14:00 -> 02:00 PM)
+ */
+export function formatTime12h(timeStr) {
+  if (!timeStr) return '';
+  const trimmed = String(timeStr).trim();
+  const match12 = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+  if (match12) {
+    const hh = match12[1].padStart(2, '0');
+    const mm = match12[2];
+    const ampm = match12[3].toUpperCase();
+    return `${hh}:${mm} ${ampm}`;
+  }
+  const match24 = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (match24) {
+    let h = parseInt(match24[1], 10);
+    const mm = match24[2];
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    const hh = String(h).padStart(2, '0');
+    return `${hh}:${mm} ${ampm}`;
+  }
+  return trimmed;
+}
+
+/**
+ * Formats room and/or meeting link for consultation display
+ */
+export function formatLocation(slot) {
+  const room = slot.room ? String(slot.room).trim() : '';
+  const link = slot.consultation_link ? String(slot.consultation_link).trim() : '';
+
+  if (room && link) {
+    const displayLink = link.replace(/^https?:\/\//i, '');
+    return `📍 ${room} ([${displayLink}](${link}))`;
+  }
+  if (room) {
+    return `📍 ${room}`;
+  }
+  if (link) {
+    const displayLink = link.replace(/^https?:\/\//i, '');
+    return `📍 Online ([${displayLink}](${link}))`;
+  }
+  return '📍 TBA';
+}
+
+/**
  * Handles modal submission for faculty_consultation_modal
  */
 export async function handleConsultationModalSubmit(interaction, db = getDb()) {
@@ -832,7 +898,7 @@ export async function handleConsultationModalSubmit(interaction, db = getDb()) {
     SELECT * FROM faculty_consultations 
     WHERE faculty_initial = ? COLLATE NOCASE
     ORDER BY 
-      CASE day_of_week
+      CASE UPPER(day_of_week)
         WHEN 'SUNDAY' THEN 1
         WHEN 'MONDAY' THEN 2
         WHEN 'TUESDAY' THEN 3
@@ -855,28 +921,31 @@ export async function handleConsultationModalSubmit(interaction, db = getDb()) {
   const facultyName = slots.find(s => s.faculty_name)?.faculty_name || null;
   const facultyEmail = slots.find(s => s.contact_email)?.contact_email || null;
 
-  const embed = new EmbedBuilder()
-    .setTitle(`👨‍🏫 Faculty Consultation: ${initial}${facultyName ? ` — ${facultyName}` : ''}`)
-    .setColor(0x6366F1)
-    .setDescription(facultyEmail ? `📧 **Email:** \`${facultyEmail}\`` : 'Office & online consultation schedule:')
-    .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
-    .setTimestamp();
+  const embedTitle = facultyName 
+    ? `👨‍🏫 Consultation Hours: ${facultyName} (${initial})`
+    : `👨‍🏫 Consultation Hours: ${initial}`;
+
+  const lines = [];
+  if (facultyEmail) {
+    lines.push(`📧 **Email:** \`${facultyEmail}\`\n`);
+  }
 
   for (const slot of slots) {
-    const startStr = slot.start_time.substring(0, 5);
-    const endStr = slot.end_time.substring(0, 5);
-    const timeFormatted = `${startStr} - ${endStr}`;
-    const locParts = [];
-    if (slot.room) locParts.push(`📍 Room: \`${slot.room}\``);
-    if (slot.consultation_link) locParts.push(`🔗 [Consultation Link](${slot.consultation_link})`);
-    const locStr = locParts.length > 0 ? locParts.join(' • ') : '📍 Room: TBA';
+    const dayName = formatDayName(slot.day_of_week);
+    const dayPad = `${dayName}:`.padEnd(11, ' ');
+    const startFmt = formatTime12h(slot.start_time);
+    const endFmt = formatTime12h(slot.end_time);
+    const loc = formatLocation(slot);
 
-    embed.addFields({
-      name: `🗓️ ${slot.day_of_week.toUpperCase()}`,
-      value: `⏰ **${timeFormatted}**\n${locStr}`,
-      inline: false
-    });
+    lines.push(`• ${dayPad} ${startFmt} - ${endFmt} | ${loc}`);
   }
+
+  const embed = new EmbedBuilder()
+    .setTitle(embedTitle)
+    .setColor(0x6366F1)
+    .setDescription(lines.join('\n'))
+    .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
+    .setTimestamp();
 
   await interaction.reply({ embeds: [embed], ephemeral: true });
 }

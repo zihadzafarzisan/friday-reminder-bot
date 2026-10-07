@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Friday — Academic Control Panel</title>
+  <title>FRIDAY — Academic Control Panel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -997,9 +997,9 @@
     <!-- TAB 3: INGESTION PORTAL (PHASE 5) -->
     <div id="tab-import" class="tab-content">
       <div class="import-hero">
-        <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.35rem;">📥 BRACU Connect Ingestion Portal</h2>
+        <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.35rem;">📥 Your Dashboard — Schedule Ingestion</h2>
         <p style="color:var(--text-muted); font-size:0.92rem; line-height:1.5;">
-          Connect your BRACU course schedule to your Discord account. Run <code style="color:var(--accent); font-family:var(--font-mono); font-weight:700;">/start</code> on Discord with <strong>@FRIDAY</strong> to generate your unique pairing code.
+          Connect your academic course schedule to your Discord account. Run <code style="color:var(--accent); font-family:var(--font-mono); font-weight:700;">/start</code> on Discord with <strong>@FRIDAY</strong> to generate your unique pairing code.
         </p>
       </div>
 
@@ -1072,10 +1072,20 @@
 
           <div style="border-top:1px solid var(--card-border); margin:0.1rem 0;"></div>
 
-          <!-- Quick Form to submit / update consultation slots -->
-          <div>
+          <!-- Mode Switcher: Multi-Slot Builder vs Batch Paste -->
+          <div style="display:flex; gap:0.5rem; margin-top:0.4rem; margin-bottom:0.75rem;">
+            <button type="button" id="btnModeForm" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem; border-color:var(--primary); background:rgba(99,102,241,0.2);" onclick="switchConsultMode('form')">
+              📋 Multi-Slot Builder
+            </button>
+            <button type="button" id="btnModeBulk" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem;" onclick="switchConsultMode('bulk')">
+              📝 Batch Paste (CSV / Text)
+            </button>
+          </div>
+
+          <!-- 1. MULTI-SLOT BUILDER FORM -->
+          <div id="consultFormContainer">
             <div style="font-weight:700; font-size:0.95rem; color:#fff; margin-bottom:0.6rem;">
-              ➕ Add / Update Consultation Slot
+              ➕ Multi-Slot Faculty Consultation Builder
             </div>
             <form id="consultationForm" onsubmit="handleSaveConsultation(event)" style="display:flex; flex-direction:column; gap:0.65rem;">
               <div style="display:grid; grid-template-columns:1fr 1.6fr; gap:0.6rem;">
@@ -1085,41 +1095,7 @@
                 </div>
                 <div>
                   <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Faculty Name</label>
-                  <input type="text" id="consultName" class="form-input" placeholder="e.g. Md. Saiful Islam" style="padding:0.45rem 0.65rem; font-size:0.85rem;">
-                </div>
-              </div>
-
-              <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.6rem;">
-                <div>
-                  <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Day *</label>
-                  <select id="consultDay" class="form-select" required style="padding:0.45rem 0.65rem; font-size:0.85rem;">
-                    <option value="SUNDAY">Sunday</option>
-                    <option value="MONDAY">Monday</option>
-                    <option value="TUESDAY">Tuesday</option>
-                    <option value="WEDNESDAY">Wednesday</option>
-                    <option value="THURSDAY">Thursday</option>
-                    <option value="FRIDAY">Friday</option>
-                    <option value="SATURDAY">Saturday</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Start Time *</label>
-                  <input type="time" id="consultStartTime" class="form-input" required style="padding:0.45rem 0.5rem; font-size:0.85rem;">
-                </div>
-                <div>
-                  <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">End Time *</label>
-                  <input type="time" id="consultEndTime" class="form-input" required style="padding:0.45rem 0.5rem; font-size:0.85rem;">
-                </div>
-              </div>
-
-              <div style="display:grid; grid-template-columns:1fr 1.3fr; gap:0.6rem;">
-                <div>
-                  <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Room / Location</label>
-                  <input type="text" id="consultRoom" class="form-input" placeholder="e.g. UB0821" style="padding:0.45rem 0.65rem; font-size:0.85rem;">
-                </div>
-                <div>
-                  <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Meeting Link (Online)</label>
-                  <input type="url" id="consultLink" class="form-input" placeholder="https://meet.google.com/..." style="padding:0.45rem 0.65rem; font-size:0.85rem;">
+                  <input type="text" id="consultName" class="form-input" placeholder="e.g. Dr. Muhammad S. Islam" style="padding:0.45rem 0.65rem; font-size:0.85rem;">
                 </div>
               </div>
 
@@ -1128,10 +1104,61 @@
                 <input type="email" id="consultEmail" class="form-input" placeholder="e.g. saiful.islam@bracu.ac.bd" style="padding:0.45rem 0.65rem; font-size:0.85rem;">
               </div>
 
-              <button type="submit" id="btnSaveConsultation" class="btn" style="justify-content:center; padding:0.6rem; margin-top:0.3rem;">
-                💾 Save Consultation Slot
+              <div style="margin-top:0.35rem;">
+                <label class="form-label" style="font-size:0.78rem; margin-bottom:0.35rem; color:#fff;">Time Slots across Weekdays:</label>
+                <div id="consultSlotRows" style="display:flex; flex-direction:column; gap:0.6rem;">
+                  <!-- Row 1 -->
+                  <div class="consult-slot-row" style="background:rgba(31, 41, 55, 0.45); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.6rem; display:flex; flex-direction:column; gap:0.45rem;">
+                    <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.5rem;">
+                      <div>
+                        <select class="form-select consult-row-day" required style="padding:0.4rem 0.5rem; font-size:0.82rem;">
+                          <option value="SUNDAY">Sunday</option>
+                          <option value="MONDAY">Monday</option>
+                          <option value="TUESDAY">Tuesday</option>
+                          <option value="WEDNESDAY">Wednesday</option>
+                          <option value="THURSDAY">Thursday</option>
+                          <option value="FRIDAY">Friday</option>
+                          <option value="SATURDAY">Saturday</option>
+                        </select>
+                      </div>
+                      <div>
+                        <input type="time" class="form-input consult-row-start" required style="padding:0.4rem 0.4rem; font-size:0.82rem;">
+                      </div>
+                      <div>
+                        <input type="time" class="form-input consult-row-end" required style="padding:0.4rem 0.4rem; font-size:0.82rem;">
+                      </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1.3fr auto; gap:0.5rem; align-items:center;">
+                      <input type="text" class="form-input consult-row-room" placeholder="Room (e.g. UB0821)" style="padding:0.4rem 0.5rem; font-size:0.82rem;">
+                      <input type="url" class="form-input consult-row-link" placeholder="Link (e.g. https://meet...)" style="padding:0.4rem 0.5rem; font-size:0.82rem;">
+                      <button type="button" class="btn btn-secondary" style="padding:0.35rem 0.6rem; color:var(--danger); border-color:rgba(239,68,68,0.3); font-size:0.8rem;" onclick="removeConsultRow(this)" title="Remove slot">✕</button>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem; margin-top:0.5rem; width:100%; justify-content:center;" onclick="addConsultRow()">
+                  ➕ Add Another Time Slot
+                </button>
+              </div>
+
+              <button type="submit" id="btnSaveConsultation" class="btn" style="justify-content:center; padding:0.6rem; margin-top:0.4rem;">
+                💾 Save All Consultation Slots
               </button>
             </form>
+          </div>
+
+          <!-- 2. BULK TEXTAREA INPUT -->
+          <div id="consultBulkContainer" style="display:none;">
+            <div style="font-weight:700; font-size:0.95rem; color:#fff; margin-bottom:0.4rem;">
+              📝 Batch Paste Faculty Consultations
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; line-height:1.4;">
+              Paste multi-line entries (one per line). Format:<br>
+              <code style="color:var(--accent);">Initial, Faculty Name, Day, Start Time, End Time, Room</code>
+            </p>
+            <textarea id="consultBulkText" class="form-input" rows="6" style="font-family:var(--font-mono); font-size:0.85rem; padding:0.6rem; width:100%; margin-bottom:0.6rem;" placeholder="MSI, Dr. Muhammad S. Islam, Sunday, 10:00 AM, 11:30 AM, UB0802&#10;MSI, Dr. Muhammad S. Islam, Tuesday, 02:00 PM, 03:30 PM, UB0802&#10;AAN, Abdullah An-Noor, Monday, 11:00 AM, 01:00 PM, UB0704"></textarea>
+            <button type="button" id="btnSaveBulkConsultation" class="btn" style="justify-content:center; padding:0.6rem; width:100%;" onclick="handleSaveBulkConsultation()">
+              ⚡ Batch Import Consultation Slots
+            </button>
           </div>
         </div>
       </div>
@@ -2049,26 +2076,91 @@
       }
     }
 
+    function switchConsultMode(mode) {
+      const formEl = document.getElementById('consultFormContainer');
+      const bulkEl = document.getElementById('consultBulkContainer');
+      const btnForm = document.getElementById('btnModeForm');
+      const btnBulk = document.getElementById('btnModeBulk');
+
+      if (mode === 'bulk') {
+        formEl.style.display = 'none';
+        bulkEl.style.display = 'block';
+        btnBulk.style.borderColor = 'var(--primary)';
+        btnBulk.style.background = 'rgba(99,102,241,0.2)';
+        btnForm.style.borderColor = 'var(--card-border)';
+        btnForm.style.background = 'transparent';
+      } else {
+        formEl.style.display = 'block';
+        bulkEl.style.display = 'none';
+        btnForm.style.borderColor = 'var(--primary)';
+        btnForm.style.background = 'rgba(99,102,241,0.2)';
+        btnBulk.style.borderColor = 'var(--card-border)';
+        btnBulk.style.background = 'transparent';
+      }
+    }
+
+    function addConsultRow() {
+      const container = document.getElementById('consultSlotRows');
+      const row = document.createElement('div');
+      row.className = 'consult-slot-row';
+      row.style = 'background:rgba(31, 41, 55, 0.45); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.6rem; display:flex; flex-direction:column; gap:0.45rem;';
+      row.innerHTML = `
+        <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.5rem;">
+          <div>
+            <select class="form-select consult-row-day" required style="padding:0.4rem 0.5rem; font-size:0.82rem;">
+              <option value="SUNDAY">Sunday</option>
+              <option value="MONDAY">Monday</option>
+              <option value="TUESDAY">Tuesday</option>
+              <option value="WEDNESDAY">Wednesday</option>
+              <option value="THURSDAY">Thursday</option>
+              <option value="FRIDAY">Friday</option>
+              <option value="SATURDAY">Saturday</option>
+            </select>
+          </div>
+          <div>
+            <input type="time" class="form-input consult-row-start" required style="padding:0.4rem 0.4rem; font-size:0.82rem;">
+          </div>
+          <div>
+            <input type="time" class="form-input consult-row-end" required style="padding:0.4rem 0.4rem; font-size:0.82rem;">
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1.3fr auto; gap:0.5rem; align-items:center;">
+          <input type="text" class="form-input consult-row-room" placeholder="Room (e.g. UB0821)" style="padding:0.4rem 0.5rem; font-size:0.82rem;">
+          <input type="url" class="form-input consult-row-link" placeholder="Link (e.g. https://meet...)" style="padding:0.4rem 0.5rem; font-size:0.82rem;">
+          <button type="button" class="btn btn-secondary" style="padding:0.35rem 0.6rem; color:var(--danger); border-color:rgba(239,68,68,0.3); font-size:0.8rem;" onclick="removeConsultRow(this)" title="Remove slot">✕</button>
+        </div>
+      `;
+      container.appendChild(row);
+    }
+
+    function removeConsultRow(btn) {
+      const container = document.getElementById('consultSlotRows');
+      const rows = container.getElementsByClassName('consult-slot-row');
+      if (rows.length > 1) {
+        btn.closest('.consult-slot-row').remove();
+      } else {
+        showToast('At least one consultation slot row is required.', 'error');
+      }
+    }
+
     async function handleSaveConsultation(event) {
       event.preventDefault();
       const initial = document.getElementById('consultInitial').value.trim().toUpperCase();
       const name = document.getElementById('consultName').value.trim();
-      const day = document.getElementById('consultDay').value;
-      const startTime = document.getElementById('consultStartTime').value;
-      const endTime = document.getElementById('consultEndTime').value;
-      const room = document.getElementById('consultRoom').value.trim();
-      const link = document.getElementById('consultLink').value.trim();
       const email = document.getElementById('consultEmail').value.trim();
 
-      const btn = document.getElementById('btnSaveConsultation');
-      btn.disabled = true;
-      btn.textContent = '⏳ Saving...';
+      const rows = document.querySelectorAll('#consultSlotRows .consult-slot-row');
+      const slots = [];
 
-      try {
-        const res = await fetch('/api/consultations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+      rows.forEach(r => {
+        const day = r.querySelector('.consult-row-day').value;
+        const startTime = r.querySelector('.consult-row-start').value;
+        const endTime = r.querySelector('.consult-row-end').value;
+        const room = r.querySelector('.consult-row-room').value.trim();
+        const link = r.querySelector('.consult-row-link').value.trim();
+
+        if (day && startTime && endTime) {
+          slots.push({
             faculty_initial: initial,
             faculty_name: name || null,
             day_of_week: day,
@@ -2077,22 +2169,77 @@
             room: room || null,
             consultation_link: link || null,
             contact_email: email || null
-          })
+          });
+        }
+      });
+
+      if (slots.length === 0) {
+        showToast('Please specify at least one valid consultation time slot.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnSaveConsultation');
+      btn.disabled = true;
+      btn.textContent = '⏳ Saving...';
+
+      try {
+        const res = await fetch('/api/consultations/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slots })
         });
 
         const json = await res.json();
         if (json.success) {
-          showToast(`Consultation slot for ${initial} saved successfully!`);
+          showToast(`Saved ${slots.length} consultation slot(s) for ${initial}!`);
           document.getElementById('consultationSearchInput').value = initial;
           await handleConsultationSearch(initial);
         } else {
-          showToast(json.error || 'Failed to save consultation', 'error');
+          showToast(json.error || 'Failed to save consultation slots', 'error');
         }
       } catch (err) {
         showToast('Error saving consultation: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = '💾 Save Consultation Slot';
+        btn.textContent = '💾 Save All Consultation Slots';
+      }
+    }
+
+    async function handleSaveBulkConsultation() {
+      const text = document.getElementById('consultBulkText').value.trim();
+      if (!text) {
+        showToast('Please paste consultation data into the text area.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnSaveBulkConsultation');
+      btn.disabled = true;
+      btn.textContent = '⏳ Processing Bulk Import...';
+
+      try {
+        const res = await fetch('/api/consultations/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+
+        const json = await res.json();
+        if (json.success) {
+          showToast(`Successfully imported ${json.count} consultation slot(s)!`);
+          document.getElementById('consultBulkText').value = '';
+          if (Array.isArray(json.data) && json.data.length > 0 && json.data[0].faculty_initial) {
+            const firstInitial = json.data[0].faculty_initial;
+            document.getElementById('consultationSearchInput').value = firstInitial;
+            await handleConsultationSearch(firstInitial);
+          }
+        } else {
+          showToast(json.error || 'Failed to import bulk consultations', 'error');
+        }
+      } catch (err) {
+        showToast('Error importing bulk consultations: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '⚡ Batch Import Consultation Slots';
       }
     }
 

@@ -8,7 +8,7 @@ const INTERVAL_MS = INTERVAL_MINUTES * 60 * 1000;
 
 async function main() {
   console.log('====================================================');
-  console.log('  BRACU CONNECT — ACADEMIC REMINDER SERVICE (MULTI-TENANT)');
+  console.log('  FRIDAY ACADEMIC ASSISTANT — REMINDER SERVICE (MULTI-TENANT)');
   console.log('====================================================');
 
   const token = process.env.DISCORD_BOT_TOKEN;

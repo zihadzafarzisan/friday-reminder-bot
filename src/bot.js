@@ -98,7 +98,7 @@ export function buildClassAlertEmbed(course, slot, offsetType, minutesLeft) {
       { name: 'Faculty', value: `👨‍🏫 ${course.faculty || 'N/A'}`, inline: true },
       { name: 'Class Time', value: `⏰ **${slot.start_time} - ${slot.end_time}** (BST)`, inline: false }
     )
-    .setFooter({ text: 'BRACU Connect Reminder • Asia/Dhaka' })
+    .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka' })
     .setTimestamp();
 }
 
@@ -122,7 +122,7 @@ export function buildExamAlertEmbed(course, event, offsetType, countdownText) {
       { name: 'Start Time', value: `🗓️ **${event.start_time}**`, inline: false },
       { name: 'End Time', value: `⏰ **${event.end_time}**`, inline: false }
     )
-    .setFooter({ text: 'BRACU Connect Exam Reminder • Asia/Dhaka' })
+    .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka' })
     .setTimestamp();
 }
 
@@ -150,7 +150,7 @@ export function buildTaskAlertEmbed(course, event, offsetType, countdownText) {
     { name: 'Room / Venue', value: `📍 ${event.room || 'Online / TBA'}`, inline: true },
     { name: 'Due / Start Time', value: `⏰ **${event.start_time}** (BST)`, inline: false }
   )
-  .setFooter({ text: 'BRACU Connect Reminder • Asia/Dhaka' })
+  .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka' })
   .setTimestamp();
 
   return embed;
@@ -161,7 +161,7 @@ export function buildTaskAlertEmbed(course, event, offsetType, countdownText) {
  */
 export function buildTestEmbed(botTag) {
   return new EmbedBuilder()
-    .setTitle('✅ BRACU Connect Bot — Connectivity Test')
+    .setTitle('✅ FRIDAY Academic Assistant — Connectivity Test')
     .setDescription('Discord bot connection and Direct Message dispatch is working properly!')
     .setColor(0x2ECC71) // Green
     .addFields(

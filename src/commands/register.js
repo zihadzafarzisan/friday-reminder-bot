@@ -7,10 +7,10 @@ import 'dotenv/config';
 export const slashCommands = [
   new SlashCommandBuilder()
     .setName('start')
-    .setDescription('Link your Discord account to BRACU Connect and get an import pairing code'),
+    .setDescription('Link your Discord account to FRIDAY and get an import pairing code'),
   new SlashCommandBuilder()
     .setName('link')
-    .setDescription('View or retrieve your BRACU Connect schedule pairing code'),
+    .setDescription('View or retrieve your FRIDAY schedule pairing code'),
   new SlashCommandBuilder()
     .setName('today')
     .setDescription("View today's class schedule, room numbers, and timings"),

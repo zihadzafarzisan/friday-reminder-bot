@@ -14,6 +14,105 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 
+export const DASHBOARD_URL = process.env.DASHBOARD_URL || 'https://friday.alwaysdata.net';
+
+const DAYS_OF_WEEK = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+
+/**
+ * Normalizes 12h or 24h time strings to standard 24h 'HH:MM' (e.g. '10:00 AM' -> '10:00', '02:00 PM' -> '14:00')
+ */
+export function normalizeTimeTo24h(timeStr) {
+  if (!timeStr) return '';
+  const trimmed = String(timeStr).trim();
+  const match12 = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+  if (match12) {
+    let h = parseInt(match12[1], 10);
+    const m = match12[2];
+    const meridiem = match12[3].toUpperCase();
+    if (meridiem === 'PM' && h < 12) h += 12;
+    if (meridiem === 'AM' && h === 12) h = 0;
+    return `${String(h).padStart(2, '0')}:${m}`;
+  }
+  const match24 = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (match24) {
+    const h = String(match24[1]).padStart(2, '0');
+    const m = match24[2];
+    return `${h}:${m}`;
+  }
+  return trimmed;
+}
+
+/**
+ * Parses multiline batch consultation text:
+ * Supports:
+ * - MSI, Dr. Muhammad S. Islam, Sunday, 10:00 AM, 11:30 AM, UB0802
+ * - MSI, Sunday, 10:00 AM, 11:30 AM, UB0802
+ */
+export function parseBulkConsultationsText(text) {
+  if (!text || typeof text !== 'string') return [];
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('#'));
+  const slots = [];
+
+  for (const line of lines) {
+    const parts = line.split(/[,;\t]/).map(p => p.trim());
+    if (parts.length < 4) continue;
+
+    const initial = parts[0];
+    let name = null;
+    let day = null;
+    let startTime = null;
+    let endTime = null;
+    let room = null;
+    let extra1 = null;
+
+    if (DAYS_OF_WEEK.includes(parts[1].toUpperCase())) {
+      day = parts[1].toUpperCase();
+      startTime = parts[2];
+      endTime = parts[3];
+      room = parts[4] || null;
+      extra1 = parts[5] || null;
+    } else {
+      name = parts[1] || null;
+      day = parts[2] ? parts[2].toUpperCase() : '';
+      startTime = parts[3] || '';
+      endTime = parts[4] || '';
+      room = parts[5] || null;
+      extra1 = parts[6] || null;
+    }
+
+    if (!initial || !day || !startTime || !endTime) continue;
+
+    let consultation_link = null;
+    let contact_email = null;
+
+    if (room && /^https?:\/\//i.test(room)) {
+      consultation_link = room;
+      room = null;
+    }
+
+    if (extra1) {
+      if (extra1.includes('@')) {
+        contact_email = extra1;
+      } else if (/^https?:\/\//i.test(extra1)) {
+        consultation_link = extra1;
+      }
+    }
+
+    slots.push({
+      faculty_initial: initial.toUpperCase(),
+      faculty_name: name,
+      day_of_week: day,
+      start_time: normalizeTimeTo24h(startTime),
+      end_time: normalizeTimeTo24h(endTime),
+      room,
+      consultation_link,
+      contact_email
+    });
+  }
+
+  return slots;
+}
+
 /**
  * Extracts the targeted user_id from query parameters or headers, defaulting to User #1
  */
@@ -825,15 +924,15 @@ export function createServer() {
         const cleanInitial = String(faculty_initial).trim().toUpperCase();
         const cleanName = faculty_name ? String(faculty_name).trim() : null;
         const cleanDay = String(day_of_week).trim().toUpperCase();
-        const cleanStart = String(start_time).trim();
-        const cleanEnd = String(end_time).trim();
+        const cleanStart = normalizeTimeTo24h(start_time);
+        const cleanEnd = normalizeTimeTo24h(end_time);
         const cleanRoom = room ? String(room).trim() : null;
         const cleanEmail = contact_email ? String(contact_email).trim() : null;
         const cleanLink = consultation_link ? String(consultation_link).trim() : null;
 
         const existing = db.prepare(`
           SELECT id FROM faculty_consultations
-          WHERE faculty_initial = ? COLLATE NOCASE AND day_of_week = ? AND start_time = ?
+          WHERE faculty_initial = ? COLLATE NOCASE AND day_of_week = ? COLLATE NOCASE AND start_time = ?
         `).get(cleanInitial, cleanDay, cleanStart);
 
         if (existing) {
@@ -873,6 +972,107 @@ export function createServer() {
     }
   });
 
+  // 18b. POST /api/consultations/bulk - Parse multiline inputs or array payloads in a single SQLite transaction
+  app.post('/api/consultations/bulk', (req, res) => {
+    try {
+      const payload = req.body;
+      let rawSlots = [];
+
+      if (typeof payload === 'string') {
+        rawSlots = parseBulkConsultationsText(payload);
+      } else if (typeof payload?.text === 'string') {
+        rawSlots = parseBulkConsultationsText(payload.text);
+      } else if (Array.isArray(payload)) {
+        rawSlots = payload;
+      } else if (Array.isArray(payload?.slots)) {
+        rawSlots = payload.slots;
+      }
+
+      if (!rawSlots || rawSlots.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'No valid consultation slots found in payload. Provide a text block or slots array.'
+        });
+      }
+
+      const performBulkTransaction = db.transaction(() => {
+        const results = [];
+        for (const slot of rawSlots) {
+          const {
+            faculty_initial,
+            faculty_name,
+            day_of_week,
+            start_time,
+            end_time,
+            room,
+            contact_email,
+            consultation_link
+          } = slot;
+
+          if (!faculty_initial || !String(faculty_initial).trim()) continue;
+          if (!day_of_week || !String(day_of_week).trim()) continue;
+          if (!start_time || !String(start_time).trim()) continue;
+          if (!end_time || !String(end_time).trim()) continue;
+
+          const cleanInitial = String(faculty_initial).trim().toUpperCase();
+          const cleanName = faculty_name ? String(faculty_name).trim() : null;
+          const cleanDay = String(day_of_week).trim().toUpperCase();
+          const cleanStart = normalizeTimeTo24h(start_time);
+          const cleanEnd = normalizeTimeTo24h(end_time);
+          const cleanRoom = room ? String(room).trim() : null;
+          const cleanEmail = contact_email ? String(contact_email).trim() : null;
+          const cleanLink = consultation_link ? String(consultation_link).trim() : null;
+
+          const existing = db.prepare(`
+            SELECT id FROM faculty_consultations
+            WHERE faculty_initial = ? COLLATE NOCASE AND day_of_week = ? COLLATE NOCASE AND start_time = ?
+          `).get(cleanInitial, cleanDay, cleanStart);
+
+          if (existing) {
+            db.prepare(`
+              UPDATE faculty_consultations SET
+                faculty_name = COALESCE(?, faculty_name),
+                end_time = ?,
+                room = COALESCE(?, room),
+                contact_email = COALESCE(?, contact_email),
+                consultation_link = COALESCE(?, consultation_link)
+              WHERE id = ?;
+            `).run(cleanName, cleanEnd, cleanRoom, cleanEmail, cleanLink, existing.id);
+
+            results.push(db.prepare('SELECT * FROM faculty_consultations WHERE id = ?').get(existing.id));
+          } else {
+            const insertStmt = db.prepare(`
+              INSERT INTO faculty_consultations (
+                faculty_initial, faculty_name, day_of_week, start_time, end_time, room, contact_email, consultation_link
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+              RETURNING *;
+            `);
+            results.push(insertStmt.get(cleanInitial, cleanName, cleanDay, cleanStart, cleanEnd, cleanRoom, cleanEmail, cleanLink));
+          }
+        }
+        return results;
+      });
+
+      const results = performBulkTransaction();
+
+      if (results.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'No valid consultation slots could be parsed from input.'
+        });
+      }
+
+      res.json({
+        success: true,
+        count: results.length,
+        message: `Successfully saved ${results.length} consultation slot(s).`,
+        data: results
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // 19. DELETE /api/consultations/:id - Remove a consultation slot
   app.delete('/api/consultations/:id', (req, res) => {
     try {
@@ -908,8 +1108,8 @@ export function startServer(port = process.env.PORT || 3000, host = process.env.
 
   const server = app.listen(targetPort, targetHost, () => {
     console.log('====================================================');
-    console.log(`  BRACU CONNECT — WEB CONTROL PANEL RUNNING`);
-    console.log(`  Dashboard URL: http://${targetHost === '0.0.0.0' ? 'localhost' : targetHost}:${targetPort}`);
+    console.log(`  FRIDAY ACADEMIC ASSISTANT — WEB CONTROL PANEL RUNNING`);
+    console.log(`  Dashboard URL: ${DASHBOARD_URL}`);
     console.log(`  Bound to Network: ${targetHost}:${targetPort}`);
     console.log('====================================================');
   });

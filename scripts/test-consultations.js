@@ -197,11 +197,10 @@ async function runTests() {
     assert.ok(embedData.title.includes('MSI'), 'Embed title should include MSI');
     assert.ok(embedData.title.includes('Md. Saiful Islam'), 'Embed title should include faculty name');
     assert.ok(embedData.description.includes('msi@bracu.ac.bd'), 'Embed description should include email');
-    assert.strictEqual(embedData.fields.length, 2, 'Should have 2 fields for the 2 slots');
-    assert.ok(embedData.fields[0].name.includes('SUNDAY'));
-    assert.ok(embedData.fields[0].value.includes('14:00 - 15:30'));
-    assert.ok(embedData.fields[0].value.includes('UB0821'));
-    assert.ok(embedData.fields[0].value.includes('https://meet.google.com/msi-sunday'));
+    assert.ok(embedData.description.includes('Sunday:'), 'Embed description should list Sunday slot');
+    assert.ok(embedData.description.includes('Tuesday:'), 'Embed description should list Tuesday slot');
+    assert.ok(embedData.description.includes('UB0821'), 'Embed description should list room UB0821');
+    assert.ok(embedData.description.includes('https://meet.google.com/msi-sunday'), 'Embed description should include consultation link');
     assert.ok(embedData.footer.text.includes('Asia/Dhaka (+06:00)'));
   });
 
@@ -307,6 +306,55 @@ async function runTests() {
 
     const check = db.prepare('SELECT id FROM faculty_consultations WHERE id = ?').get(tsmSlot.id);
     assert.strictEqual(check, undefined, 'Slot should be deleted');
+  });
+
+  await itAsync('POST /api/consultations/bulk accepts multiline batch text and saves in transaction', async () => {
+    const bulkText = [
+      'MSI, Dr. Muhammad S. Islam, Sunday, 10:00 AM, 11:30 AM, UB0802',
+      'MSI, Dr. Muhammad S. Islam, Tuesday, 02:00 PM, 03:30 PM, UB0802',
+      'AAN, Abdullah An-Noor, Monday, 11:00 AM, 01:00 PM, UB0704'
+    ].join('\n');
+
+    const res = await request(server, '/api/consultations/bulk', 'POST', { text: bulkText });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.success, true);
+    assert.strictEqual(res.body.count, 3);
+
+    // Verify DB entries
+    const msiSlots = db.prepare("SELECT * FROM faculty_consultations WHERE faculty_initial = 'MSI' ORDER BY day_of_week ASC").all();
+    assert.ok(msiSlots.length >= 2, 'Should have multiple slots for MSI across days');
+  });
+
+  await itAsync('handleConsultationModalSubmit formats multi-day consultation hours cleanly', async () => {
+    const interaction = createMockModalInteraction('faculty_consultation_modal', { faculty_initial: 'MSI' });
+    await handleConsultationModalSubmit(interaction, db);
+    const reply = interaction.getReply();
+    const embed = reply.embeds[0].data;
+
+    assert.ok(embed.title.includes('Consultation Hours: Dr. Muhammad S. Islam (MSI)'));
+    assert.ok(embed.description.includes('Sunday:'));
+    assert.ok(embed.description.includes('Tuesday:'));
+    assert.ok(embed.description.includes('10:00 AM - 11:30 AM'));
+    assert.ok(embed.description.includes('02:00 PM - 03:30 PM'));
+    assert.ok(embed.description.includes('UB0802'));
+  });
+
+  await itAsync('POST /api/consultations/bulk accepts slots array payload', async () => {
+    const arrayPayload = {
+      slots: [
+        {
+          faculty_initial: 'AAN',
+          faculty_name: 'Abdullah An-Noor',
+          day_of_week: 'WEDNESDAY',
+          start_time: '14:00',
+          end_time: '15:30',
+          room: 'UB0704'
+        }
+      ]
+    };
+    const res = await request(server, '/api/consultations/bulk', 'POST', arrayPayload);
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.count, 1);
   });
 
   // --- TEST GROUP 4: Strict Architectural Constraints (No Background Reminders) ---
