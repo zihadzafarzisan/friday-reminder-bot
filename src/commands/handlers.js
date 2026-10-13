@@ -13,6 +13,7 @@ import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { getDhakaContext } from '../reminder-engine.js';
 import { normalizeAndIngestPayload } from '../normalize.js';
+import { resolveEventType } from '../utils/room.js';
 
 export const DASHBOARD_URL = process.env.DASHBOARD_URL || 'https://friday.alwaysdata.net';
 
@@ -406,8 +407,10 @@ export async function handleTodayCommand(interaction, db = getDb()) {
     for (const s of slots) {
       const startClean = s.start_time.substring(0, 5);
       const endClean = s.end_time.substring(0, 5);
+      const eventType = resolveEventType(s.room);
+      const typeLabel = eventType === 'LAB' ? 'Lab' : 'Class';
       embed.addFields({
-        name: `⏰ ${startClean} - ${endClean} BST • ${s.code} (Sec ${s.section})`,
+        name: `⏰ ${startClean} - ${endClean} BST • ${s.code} ${typeLabel} (Sec ${s.section})`,
         value: `📍 Room: **${s.room || 'TBA'}** • 👨‍🏫 Faculty: ${s.faculty || 'N/A'}\n*${s.name || 'Enrolled Course'}*`,
         inline: false
       });
@@ -479,10 +482,12 @@ export async function handleNextCommand(interaction, db = getDb()) {
   for (const s of todaySlots) {
     const epoch = new Date(`${dateStr}T${s.start_time}+06:00`).getTime();
     if (epoch > nowMs) {
+      const eventType = resolveEventType(s.room);
+      const typeLabel = eventType === 'LAB' ? 'Lab' : 'Class';
       candidates.push({
         epoch,
-        kind: 'CLASS',
-        title: `${s.code} Class (Sec ${s.section})`,
+        kind: eventType,
+        title: `${s.code} ${typeLabel} (Sec ${s.section})`,
         courseCode: s.code,
         courseName: s.name,
         room: s.room || 'TBA',
@@ -551,10 +556,12 @@ export async function handleNextCommand(interaction, db = getDb()) {
     for (const s of futureSlots) {
       const epoch = new Date(`${futureDateStr}T${s.start_time}+06:00`).getTime();
       if (epoch > nowMs) {
+        const eventType = resolveEventType(s.room);
+        const typeLabel = eventType === 'LAB' ? 'Lab' : 'Class';
         candidates.push({
           epoch,
-          kind: 'CLASS',
-          title: `${s.code} Class (Sec ${s.section})`,
+          kind: eventType,
+          title: `${s.code} ${typeLabel} (Sec ${s.section})`,
           courseCode: s.code,
           courseName: s.name,
           room: s.room || 'TBA',
@@ -583,7 +590,8 @@ export async function handleNextCommand(interaction, db = getDb()) {
 
   // Distinct colors per event type
   let color = 0x3498DB; // Blue for Class
-  if (next.kind === 'FINAL') color = 0xE74C3C; // Red
+  if (next.kind === 'LAB') color = 0x06B6D4; // Cyan for Lab
+  else if (next.kind === 'FINAL') color = 0xE74C3C; // Red
   else if (next.kind === 'MIDTERM') color = 0x9B59B6; // Purple
   else if (next.kind === 'QUIZ') color = 0xF59E0B; // Amber
   else if (next.kind === 'ASSIGNMENT') color = 0x06B6D4; // Cyan
@@ -1397,7 +1405,9 @@ export function buildRoutineEmbed(slots, selectedDay = 'ALL') {
         const timeStr = `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}`;
         const roomStr = s.room ? `📍 \`${s.room}\`` : '📍 TBA';
         const facStr = s.faculty ? ` • 👨‍🏫 ${s.faculty}` : '';
-        return `• **${s.code}** (Sec ${s.section}) | ⏰ \`${timeStr}\` | ${roomStr}${facStr}`;
+        const eventType = resolveEventType(s.room);
+        const typeBadge = eventType === 'LAB' ? ' `[LAB]`' : '';
+        return `• **${s.code}** (Sec ${s.section})${typeBadge} | ⏰ \`${timeStr}\` | ${roomStr}${facStr}`;
       });
 
       embed.addFields({
@@ -1418,7 +1428,9 @@ export function buildRoutineEmbed(slots, selectedDay = 'ALL') {
         const roomStr = s.room ? `📍 Room: \`${s.room}\`` : '📍 Room: TBA';
         const facStr = s.faculty ? `\n👨‍🏫 Faculty: **${s.faculty}**` : '';
         const nameStr = s.name ? `\n📖 *${s.name}*` : '';
-        return `### **${s.code}** (Section ${s.section})\n⏰ **${timeStr}** • ${roomStr}${facStr}${nameStr}`;
+        const eventType = resolveEventType(s.room);
+        const typeLabel = eventType === 'LAB' ? 'Lab' : 'Class';
+        return `### **${s.code}** ${typeLabel} (Section ${s.section})\n⏰ **${timeStr}** • ${roomStr}${facStr}${nameStr}`;
       });
 
       embed.setDescription(lines.join('\n\n'));

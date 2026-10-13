@@ -1,6 +1,7 @@
 import { Client, GatewayIntentBits, Partials, EmbedBuilder } from 'discord.js';
 import { registerCommands } from './commands/register.js';
 import { handleInteraction } from './commands/handlers.js';
+import { resolveEventType } from './utils/room.js';
 
 let clientInstance = null;
 let clientLoginPromise = null;
@@ -102,23 +103,27 @@ export async function sendDM(userId, messagePayload, client = clientInstance) {
 }
 
 /**
- * Formats a clean Rich Embed for upcoming class routines
+ * Formats a clean Rich Embed for upcoming class or lab routines
  */
 export function buildClassAlertEmbed(course, slot, offsetType, minutesLeft) {
-  const isUrgent = offsetType === '10M_BEFORE';
-  const color = isUrgent ? 0xE67E22 : 0x3498DB; // Orange vs Blue
+  const eventType = slot?.type || slot?.eventType || resolveEventType(slot?.room);
+  const isLab = eventType === 'LAB';
+  const typeLabel = isLab ? 'Lab' : 'Class';
 
-  const titlePrefix = isUrgent ? '⏳ Class Starting Soon' : '🔔 Upcoming Class Reminder';
+  const isUrgent = offsetType === '10M_BEFORE';
+  const color = isUrgent ? 0xE67E22 : (isLab ? 0x06B6D4 : 0x3498DB); // Orange vs Cyan (Lab) / Blue (Class)
+
+  const titlePrefix = isUrgent ? `⏳ ${typeLabel} Starting Soon` : `🔔 Upcoming ${typeLabel} Reminder`;
 
   return new EmbedBuilder()
     .setTitle(`${titlePrefix}: ${course.code}`)
-    .setDescription(`You have a scheduled class in **${minutesLeft} minutes**.`)
+    .setDescription(`You have a scheduled ${typeLabel.toLowerCase()} in **${minutesLeft} minutes**.`)
     .setColor(color)
     .addFields(
       { name: 'Course', value: `**${course.code}** (Section ${course.section})`, inline: true },
       { name: 'Room', value: `📍 **${slot.room || 'TBA'}**`, inline: true },
       { name: 'Faculty', value: `👨‍🏫 ${course.faculty || 'N/A'}`, inline: true },
-      { name: 'Class Time', value: `⏰ **${slot.start_time} - ${slot.end_time}** (BST)`, inline: false }
+      { name: `${typeLabel} Time`, value: `⏰ **${slot.start_time} - ${slot.end_time}** (BST)`, inline: false }
     )
     .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka' })
     .setTimestamp();

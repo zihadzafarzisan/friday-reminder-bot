@@ -11,6 +11,7 @@ import { getDiscordClient, sendDM, buildTestEmbed, buildExamAlertEmbed, buildTas
 import { buildTaskActionRow } from './commands/handlers.js';
 import { EmbedBuilder } from 'discord.js';
 import { initBot, stopBot } from './index.js';
+import { resolveEventType } from './utils/room.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -573,6 +574,7 @@ export function createServer() {
       for (const d of days) grouped[d] = [];
 
       for (const slot of slots) {
+        slot.type = resolveEventType(slot.room);
         if (!grouped[slot.day_of_week]) {
           grouped[slot.day_of_week] = [];
         }

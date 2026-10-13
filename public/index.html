@@ -1672,7 +1672,7 @@
                 slotsHtml += `
                   <div class="slot-card">
                     <div class="slot-time">${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}</div>
-                    <div class="slot-code">${s.code} <span style="font-size:0.8rem; font-weight:600; color:var(--text-muted);">(Sec ${s.section})</span></div>
+                    <div class="slot-code">${s.code} <span style="font-size:0.8rem; font-weight:600; color:var(--text-muted);">(Sec ${s.section})</span>${s.type === 'LAB' ? ' <span style="font-size:0.7rem; font-weight:700; background:rgba(6,182,212,0.2); color:#06b6d4; padding:0.1rem 0.35rem; border-radius:3px;">LAB</span>' : ''}</div>
                     <div class="slot-meta">
                       <div class="meta-row"><span>📍 Room:</span> <strong style="color:#fff;">${s.room || 'TBA'}</strong></div>
                       <div class="meta-row"><span>👨‍🏫 Faculty:</span> <span>${s.faculty || 'N/A'}</span></div>

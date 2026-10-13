@@ -1,6 +1,7 @@
 import { getDb } from './db/index.js';
 import { sendDM, buildClassAlertEmbed, buildExamAlertEmbed, buildTaskAlertEmbed } from './bot.js';
 import { buildTaskActionRow } from './commands/handlers.js';
+import { resolveEventType } from './utils/room.js';
 
 let isEngineRunning = false;
 let engineTimer = null;
@@ -218,10 +219,13 @@ export async function runEvaluationTick({
         section: slot.section,
         faculty: slot.faculty
       };
+      const room = slot.slot_room || slot.course_room || 'TBA';
+      const eventType = resolveEventType(room);
       const slotData = {
         start_time: slot.start_time,
         end_time: slot.end_time,
-        room: slot.slot_room || slot.course_room || 'TBA'
+        room,
+        type: eventType
       };
 
       // Trigger: 30 minutes before (window: 25 - 30 minutes)
@@ -235,7 +239,7 @@ export async function runEvaluationTick({
             status = res.success ? 'SENT' : 'FAILED';
           }
           if (!dryRun) recordLogStmt.run(currentUserId, slot.slot_id, 'routine_slot', '30m', dateStr, status, eventKey, '30M_BEFORE');
-          dispatched.push({ userId: currentUserId, targetDiscordUserId, type: 'ROUTINE', eventKey, offset: '30M_BEFORE', diffMinutes, course: slot.code, status });
+          dispatched.push({ userId: currentUserId, targetDiscordUserId, type: eventType, eventType, eventKey, offset: '30M_BEFORE', diffMinutes, course: slot.code, status });
         }
       }
 
@@ -250,7 +254,7 @@ export async function runEvaluationTick({
             status = res.success ? 'SENT' : 'FAILED';
           }
           if (!dryRun) recordLogStmt.run(currentUserId, slot.slot_id, 'routine_slot', '10m', dateStr, status, eventKey, '10M_BEFORE');
-          dispatched.push({ userId: currentUserId, targetDiscordUserId, type: 'ROUTINE', eventKey, offset: '10M_BEFORE', diffMinutes, course: slot.code, status });
+          dispatched.push({ userId: currentUserId, targetDiscordUserId, type: eventType, eventType, eventKey, offset: '10M_BEFORE', diffMinutes, course: slot.code, status });
         }
       }
     }
