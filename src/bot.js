@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits, Partials, EmbedBuilder } from 'discord.js';
 import { registerCommands } from './commands/register.js';
 import { handleInteraction } from './commands/handlers.js';
 import { resolveEventType } from './utils/room.js';
+import { classifyClassEvent } from './utils/eventClassifier.js';
 
 let clientInstance = null;
 let clientLoginPromise = null;
@@ -106,12 +107,12 @@ export async function sendDM(userId, messagePayload, client = clientInstance) {
  * Formats a clean Rich Embed for upcoming class or lab routines
  */
 export function buildClassAlertEmbed(course, slot, offsetType, minutesLeft) {
-  const eventType = slot?.type || slot?.eventType || resolveEventType(slot?.room);
-  const isLab = eventType === 'LAB';
+  const classification = classifyClassEvent(course?.code, slot?.room);
+  const isLab = slot?.type === 'LAB' || slot?.eventType === 'LAB' || classification.isLab;
   const typeLabel = isLab ? 'Lab' : 'Class';
 
   const isUrgent = offsetType === '10M_BEFORE';
-  const color = isUrgent ? 0xE67E22 : (isLab ? 0x06B6D4 : 0x3498DB); // Orange vs Cyan (Lab) / Blue (Class)
+  const color = isUrgent ? 0xE67E22 : (isLab ? 0xF59E0B : 0x3B82F6); // Orange vs Amber (Lab) / Blue (Class)
 
   const titlePrefix = isUrgent ? `⏳ ${typeLabel} Starting Soon` : `🔔 Upcoming ${typeLabel} Reminder`;
 

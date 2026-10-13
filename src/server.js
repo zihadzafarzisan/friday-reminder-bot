@@ -12,6 +12,7 @@ import { buildTaskActionRow } from './commands/handlers.js';
 import { EmbedBuilder } from 'discord.js';
 import { initBot, stopBot } from './index.js';
 import { resolveEventType } from './utils/room.js';
+import { classifyClassEvent } from './utils/eventClassifier.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -574,7 +575,7 @@ export function createServer() {
       for (const d of days) grouped[d] = [];
 
       for (const slot of slots) {
-        slot.type = resolveEventType(slot.room);
+        slot.type = classifyClassEvent(slot.code, slot.room).kind;
         if (!grouped[slot.day_of_week]) {
           grouped[slot.day_of_week] = [];
         }

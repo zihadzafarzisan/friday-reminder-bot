@@ -14,6 +14,7 @@ import { getDb } from '../db/index.js';
 import { getDhakaContext } from '../reminder-engine.js';
 import { normalizeAndIngestPayload } from '../normalize.js';
 import { resolveEventType } from '../utils/room.js';
+import { classifyClassEvent } from '../utils/eventClassifier.js';
 
 export const DASHBOARD_URL = process.env.DASHBOARD_URL || 'https://friday.alwaysdata.net';
 
@@ -407,8 +408,7 @@ export async function handleTodayCommand(interaction, db = getDb()) {
     for (const s of slots) {
       const startClean = s.start_time.substring(0, 5);
       const endClean = s.end_time.substring(0, 5);
-      const eventType = resolveEventType(s.room);
-      const typeLabel = eventType === 'LAB' ? 'Lab' : 'Class';
+      const { label: typeLabel } = classifyClassEvent(s.code, s.room);
       embed.addFields({
         name: `⏰ ${startClean} - ${endClean} BST • ${s.code} ${typeLabel} (Sec ${s.section})`,
         value: `📍 Room: **${s.room || 'TBA'}** • 👨‍🏫 Faculty: ${s.faculty || 'N/A'}\n*${s.name || 'Enrolled Course'}*`,
@@ -482,8 +482,7 @@ export async function handleNextCommand(interaction, db = getDb()) {
   for (const s of todaySlots) {
     const epoch = new Date(`${dateStr}T${s.start_time}+06:00`).getTime();
     if (epoch > nowMs) {
-      const eventType = resolveEventType(s.room);
-      const typeLabel = eventType === 'LAB' ? 'Lab' : 'Class';
+      const { kind: eventType, label: typeLabel, color } = classifyClassEvent(s.code, s.room);
       candidates.push({
         epoch,
         kind: eventType,
@@ -492,7 +491,8 @@ export async function handleNextCommand(interaction, db = getDb()) {
         courseName: s.name,
         room: s.room || 'TBA',
         faculty: s.faculty,
-        timeLabel: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} BST`
+        timeLabel: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} BST`,
+        color
       });
     }
   }
@@ -556,8 +556,7 @@ export async function handleNextCommand(interaction, db = getDb()) {
     for (const s of futureSlots) {
       const epoch = new Date(`${futureDateStr}T${s.start_time}+06:00`).getTime();
       if (epoch > nowMs) {
-        const eventType = resolveEventType(s.room);
-        const typeLabel = eventType === 'LAB' ? 'Lab' : 'Class';
+        const { kind: eventType, label: typeLabel, color } = classifyClassEvent(s.code, s.room);
         candidates.push({
           epoch,
           kind: eventType,
@@ -566,7 +565,8 @@ export async function handleNextCommand(interaction, db = getDb()) {
           courseName: s.name,
           room: s.room || 'TBA',
           faculty: s.faculty,
-          timeLabel: `${futureDateStr} (${futureDayOfWeek}) ${s.start_time.substring(0, 5)} BST`
+          timeLabel: `${futureDateStr} (${futureDayOfWeek}) ${s.start_time.substring(0, 5)} BST`,
+          color
         });
       }
     }
@@ -589,12 +589,14 @@ export async function handleNextCommand(interaction, db = getDb()) {
   const unixSec = Math.floor(next.epoch / 1000);
 
   // Distinct colors per event type
-  let color = 0x3498DB; // Blue for Class
-  if (next.kind === 'LAB') color = 0x06B6D4; // Cyan for Lab
+  let color = 0x3B82F6; // Blue for Class
+  if (next.kind === 'LAB') color = 0xF59E0B; // Amber for Lab
+  else if (next.kind === 'CLASS') color = 0x3B82F6; // Blue for Class
   else if (next.kind === 'FINAL') color = 0xE74C3C; // Red
   else if (next.kind === 'MIDTERM') color = 0x9B59B6; // Purple
   else if (next.kind === 'QUIZ') color = 0xF59E0B; // Amber
   else if (next.kind === 'ASSIGNMENT') color = 0x06B6D4; // Cyan
+  if (next.color) color = next.color;
 
   const embed = new EmbedBuilder()
     .setTitle(`⏳ Next Up: ${next.title}`)
@@ -1405,8 +1407,8 @@ export function buildRoutineEmbed(slots, selectedDay = 'ALL') {
         const timeStr = `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}`;
         const roomStr = s.room ? `📍 \`${s.room}\`` : '📍 TBA';
         const facStr = s.faculty ? ` • 👨‍🏫 ${s.faculty}` : '';
-        const eventType = resolveEventType(s.room);
-        const typeBadge = eventType === 'LAB' ? ' `[LAB]`' : '';
+        const { isLab } = classifyClassEvent(s.code, s.room);
+        const typeBadge = isLab ? ' `[LAB]`' : '';
         return `• **${s.code}** (Sec ${s.section})${typeBadge} | ⏰ \`${timeStr}\` | ${roomStr}${facStr}`;
       });
 
@@ -1428,8 +1430,7 @@ export function buildRoutineEmbed(slots, selectedDay = 'ALL') {
         const roomStr = s.room ? `📍 Room: \`${s.room}\`` : '📍 Room: TBA';
         const facStr = s.faculty ? `\n👨‍🏫 Faculty: **${s.faculty}**` : '';
         const nameStr = s.name ? `\n📖 *${s.name}*` : '';
-        const eventType = resolveEventType(s.room);
-        const typeLabel = eventType === 'LAB' ? 'Lab' : 'Class';
+        const { label: typeLabel } = classifyClassEvent(s.code, s.room);
         return `### **${s.code}** ${typeLabel} (Section ${s.section})\n⏰ **${timeStr}** • ${roomStr}${facStr}${nameStr}`;
       });
 

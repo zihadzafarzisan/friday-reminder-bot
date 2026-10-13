@@ -1,6 +1,8 @@
 import assert from 'assert';
 import { resolveEventType } from '../src/utils/room.js';
 import { resolveEventType as resolveFromServices } from '../src/services/helpers.js';
+import { classifyClassEvent } from '../src/utils/eventClassifier.js';
+import { classifyClassEvent as classifyFromServices } from '../src/services/helpers.js';
 import { buildClassAlertEmbed } from '../src/bot.js';
 import { initTestEnvironment } from '../src/db/test-helper.js';
 import { runEvaluationTick } from '../src/reminder-engine.js';
@@ -63,13 +65,77 @@ async function runTests() {
   console.log('  TESTING DYNAMIC EVENT TYPE (CLASS VS LAB) RESOLUTION');
   console.log('====================================================\n');
 
-  // --- TEST GROUP 1: resolveEventType Unit Tests ---
-  console.log('--- TEST GROUP 1: resolveEventType Helper ---');
+  // --- TEST GROUP 1: resolveEventType & classifyClassEvent Unit Tests ---
+  console.log('--- TEST GROUP 1: Event Classification Helpers ---');
 
-  it('Both src/utils/room.js and src/services/helpers.js export identical function', () => {
+  it('Both src/utils/room.js and src/services/helpers.js export identical resolveEventType', () => {
     assert.strictEqual(typeof resolveEventType, 'function');
     assert.strictEqual(typeof resolveFromServices, 'function');
     assert.strictEqual(resolveEventType('09A-06C'), resolveFromServices('09A-06C'));
+  });
+
+  it('Both src/utils/eventClassifier.js and src/services/helpers.js export classifyClassEvent', () => {
+    assert.strictEqual(typeof classifyClassEvent, 'function');
+    assert.strictEqual(typeof classifyFromServices, 'function');
+    assert.deepStrictEqual(classifyClassEvent('CSE330L', '12F-30L'), classifyFromServices('CSE330L', '12F-30L'));
+  });
+
+  it('classifyClassEvent: Room ending with "L" resolves to LAB (amber 0xF59E0B)', () => {
+    const res = classifyClassEvent('CSE220', '12F-30L');
+    assert.strictEqual(res.isLab, true);
+    assert.strictEqual(res.kind, 'LAB');
+    assert.strictEqual(res.label, 'Lab');
+    assert.strictEqual(res.color, 0xF59E0B);
+  });
+
+  it('classifyClassEvent: Course code ending with "L" resolves to LAB (amber 0xF59E0B) even with non-L room', () => {
+    const res = classifyClassEvent('CSE330L', '09A-06C');
+    assert.strictEqual(res.isLab, true);
+    assert.strictEqual(res.kind, 'LAB');
+    assert.strictEqual(res.label, 'Lab');
+    assert.strictEqual(res.color, 0xF59E0B);
+  });
+
+  it('classifyClassEvent: Room ending with "C" and standard course code resolves to CLASS (blue 0x3B82F6)', () => {
+    const res = classifyClassEvent('CSE220', '09A-06C');
+    assert.strictEqual(res.isLab, false);
+    assert.strictEqual(res.kind, 'CLASS');
+    assert.strictEqual(res.label, 'Class');
+    assert.strictEqual(res.color, 0x3B82F6);
+  });
+
+  it('classifyClassEvent: Trims whitespace and handles lowercase suffixes', () => {
+    const res1 = classifyClassEvent('  cse330l  ', '  09a-06c  ');
+    assert.strictEqual(res1.isLab, true);
+    assert.strictEqual(res1.kind, 'LAB');
+    assert.strictEqual(res1.color, 0xF59E0B);
+
+    const res2 = classifyClassEvent('cse220', '  12f-30l  ');
+    assert.strictEqual(res2.isLab, true);
+    assert.strictEqual(res2.kind, 'LAB');
+    assert.strictEqual(res2.color, 0xF59E0B);
+
+    const res3 = classifyClassEvent('cse220', '  09a-06c  ');
+    assert.strictEqual(res3.isLab, false);
+    assert.strictEqual(res3.kind, 'CLASS');
+    assert.strictEqual(res3.color, 0x3B82F6);
+  });
+
+  it('classifyClassEvent: Null, undefined, and non-string inputs fallback to CLASS (blue 0x3B82F6)', () => {
+    const res1 = classifyClassEvent(null, null);
+    assert.strictEqual(res1.isLab, false);
+    assert.strictEqual(res1.kind, 'CLASS');
+    assert.strictEqual(res1.color, 0x3B82F6);
+
+    const res2 = classifyClassEvent(undefined, undefined);
+    assert.strictEqual(res2.isLab, false);
+    assert.strictEqual(res2.kind, 'CLASS');
+    assert.strictEqual(res2.color, 0x3B82F6);
+
+    const res3 = classifyClassEvent('', '');
+    assert.strictEqual(res3.isLab, false);
+    assert.strictEqual(res3.kind, 'CLASS');
+    assert.strictEqual(res3.color, 0x3B82F6);
   });
 
   it('Room ending with "C" resolves to CLASS', () => {
@@ -133,7 +199,7 @@ async function runTests() {
 
     assert.ok(data.title.includes('Upcoming Class Reminder: CSE220'), `Expected class title, got: ${data.title}`);
     assert.ok(data.description.includes('scheduled class in **30 minutes**'), `Expected class description, got: ${data.description}`);
-    assert.strictEqual(data.color, 0x3498DB, 'Standard class color is blue (0x3498DB)');
+    assert.strictEqual(data.color, 0x3B82F6, 'Standard class color is blue (0x3B82F6)');
 
     const classTimeField = data.fields.find(f => f.name === 'Class Time');
     assert.ok(classTimeField, 'Expected field named "Class Time"');
@@ -151,7 +217,7 @@ async function runTests() {
 
     assert.ok(data.title.includes('Upcoming Lab Reminder: CSE330L'), `Expected lab title, got: ${data.title}`);
     assert.ok(data.description.includes('scheduled lab in **30 minutes**'), `Expected lab description, got: ${data.description}`);
-    assert.strictEqual(data.color, 0x06B6D4, 'Standard lab color is cyan (0x06B6D4)');
+    assert.strictEqual(data.color, 0xF59E0B, 'Standard lab color is amber (0xF59E0B)');
 
     const labTimeField = data.fields.find(f => f.name === 'Lab Time');
     assert.ok(labTimeField, 'Expected field named "Lab Time"');
@@ -159,6 +225,17 @@ async function runTests() {
 
     const roomField = data.fields.find(f => f.name === 'Room');
     assert.ok(roomField.value.includes('12F-30L'));
+  });
+
+  it('Course code ending with "L" (CSE330L) builds LAB embed (0xF59E0B) even if room is TBA or non-L', () => {
+    const labCourse = { code: 'CSE330L', name: 'Numerical Methods Lab', section: '11', faculty: 'RFTS' };
+    const slot = { start_time: '14:00:00', end_time: '16:50:00', room: 'TBA' };
+    const embed = buildClassAlertEmbed(labCourse, slot, '30M_BEFORE', 30);
+    const data = embed.data;
+
+    assert.ok(data.title.includes('Upcoming Lab Reminder: CSE330L'));
+    assert.strictEqual(data.color, 0xF59E0B, 'Standard lab color is amber (0xF59E0B)');
+    assert.ok(data.fields.some(f => f.name === 'Lab Time'));
   });
 
   it('Urgent notification (10M_BEFORE) adjusts prefix for Class and Lab', () => {
@@ -223,6 +300,27 @@ async function runTests() {
     const eventTypeField = nextEmbed.data.fields.find(f => f.name === 'Event Type');
     assert.ok(eventTypeField, 'Embed has Event Type field');
     assert.ok(eventTypeField.value.includes('CLASS') || eventTypeField.value.includes('LAB') || eventTypeField.value.includes('MIDTERM') || eventTypeField.value.includes('FINAL'));
+    if (eventTypeField.value.includes('LAB')) {
+      assert.strictEqual(nextEmbed.data.color, 0xF59E0B, 'Next embed for LAB has amber color (0xF59E0B)');
+    } else if (eventTypeField.value.includes('CLASS')) {
+      assert.strictEqual(nextEmbed.data.color, 0x3B82F6, 'Next embed for CLASS has blue color (0x3B82F6)');
+    }
+  });
+
+  await itAsync('/today command labels Lab and Class slots with correct headers', async () => {
+    const inter = createMockChatInteraction('today');
+    await handleTodayCommand(inter, db);
+    const reply = inter.getReply();
+    assert.ok(reply && reply.embeds && reply.embeds.length > 0);
+    const todayEmbed = reply.embeds[0];
+    assert.ok(todayEmbed.data.title.includes("Today's Schedule"));
+    if (todayEmbed.data.fields) {
+      for (const f of todayEmbed.data.fields) {
+        if (f.name.includes('CSE330L') || f.name.includes('CSE220L') || f.name.includes('CSE260L')) {
+          assert.ok(f.name.includes('Lab'), `Expected field for lab course to contain "Lab": ${f.name}`);
+        }
+      }
+    }
   });
 
   it('buildRoutineEmbed adds `[LAB]` tag to lab slots in weekly overview', () => {
@@ -251,6 +349,14 @@ async function runTests() {
     ];
     const embed = buildRoutineEmbed(sampleSlots, 'WEDNESDAY');
     assert.ok(embed.data.description.includes('**CSE260** Class (Section 05)'), `Expected "**CSE260** Class (Section 05)", got: ${embed.data.description}`);
+  });
+
+  it('buildRoutineEmbed identifies course code ending in L (CSE330L) as LAB even with TBA room', () => {
+    const sampleSlots = [
+      { day_of_week: 'TUESDAY', start_time: '14:00:00', end_time: '16:50:00', room: 'TBA', code: 'CSE330L', section: '11', faculty: 'RFTS' }
+    ];
+    const embed = buildRoutineEmbed(sampleSlots, 'TUESDAY');
+    assert.ok(embed.data.description.includes('**CSE330L** Lab (Section 11)'), `Expected Lab header even with room TBA, got: ${embed.data.description}`);
   });
 
   cleanup();

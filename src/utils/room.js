@@ -15,3 +15,5 @@ export function resolveEventType(room, defaultType = 'CLASS') {
   if (cleaned.endsWith('C')) return 'CLASS';
   return defaultType;
 }
+
+export { classifyClassEvent } from './eventClassifier.js';

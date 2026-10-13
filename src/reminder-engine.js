@@ -2,6 +2,7 @@ import { getDb } from './db/index.js';
 import { sendDM, buildClassAlertEmbed, buildExamAlertEmbed, buildTaskAlertEmbed } from './bot.js';
 import { buildTaskActionRow } from './commands/handlers.js';
 import { resolveEventType } from './utils/room.js';
+import { classifyClassEvent } from './utils/eventClassifier.js';
 
 let isEngineRunning = false;
 let engineTimer = null;
@@ -220,7 +221,7 @@ export async function runEvaluationTick({
         faculty: slot.faculty
       };
       const room = slot.slot_room || slot.course_room || 'TBA';
-      const eventType = resolveEventType(room);
+      const { kind: eventType } = classifyClassEvent(slot.code, room);
       const slotData = {
         start_time: slot.start_time,
         end_time: slot.end_time,
