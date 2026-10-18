@@ -287,10 +287,13 @@ Final Exam: Tuesday, September 15, 2026 8:30 AM - 10:30 AM
   `).run(sessionToken1);
   const cookieHeader1 = { Cookie: `friday_session=${sessionToken1}` };
 
-  await itAsync('POST /api/schedule/upload-pdf rejects unauthenticated request with 401', async () => {
+  await itAsync('POST /api/schedule/upload-pdf rejects unauthenticated request with 401 JSON', async () => {
     const dummyPdf = createTestPdf('Test');
     const res = await uploadMultipart(server, '/api/schedule/upload-pdf', 'routine', 'routine.pdf', dummyPdf);
     assert.strictEqual(res.status, 401);
+    assert.strictEqual(res.json?.error, 'Unauthorized');
+    assert.ok(!res.headers?.location, 'Must not issue redirect');
+    assert.ok(res.headers['content-type']?.includes('application/json'), 'Must return JSON');
   });
 
   await itAsync('POST /api/schedule/upload-pdf rejects request without file with 400', async () => {
@@ -435,6 +438,28 @@ Final Exam: 2026-09-16 11:00 - 13:00
     const embed = mockInter._reply.embeds[0].data;
     assert.ok(embed.title.includes('Routine Imported Successfully'));
     assert.ok(embed.description.includes('1'));
+  });
+
+  const mockUnsupportedInter = {
+    user: { id: '1328051283080380559', tag: 'Student1' },
+    options: {
+      getAttachment: () => ({
+        name: 'photo.png',
+        contentType: 'image/png',
+        content: Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+      })
+    },
+    reply: function(payload) {
+      this._reply = payload;
+      return Promise.resolve(payload);
+    }
+  };
+
+  await itAsync('handleImportCommand rejects unsupported file formats with descriptive error', async () => {
+    await handleImportCommand(mockUnsupportedInter, db);
+    assert.ok(mockUnsupportedInter._reply);
+    assert.strictEqual(mockUnsupportedInter._reply.ephemeral, true);
+    assert.ok(mockUnsupportedInter._reply.content.includes('Unsupported file format'));
   });
 
   await closeDiscordClient();

@@ -1254,6 +1254,13 @@ export async function handleImportCommand(interaction, db = getDb()) {
     });
   }
 
+  const sendReply = async (payload) => {
+    if (interaction.deferred && typeof interaction.editReply === 'function') {
+      return interaction.editReply(payload);
+    }
+    return interaction.reply(payload);
+  };
+
   // 1. Download attachment buffer first
   let fileBuffer = null;
   if (Buffer.isBuffer(attachment.content)) {
@@ -1265,7 +1272,7 @@ export async function handleImportCommand(interaction, db = getDb()) {
   } else if (attachment.url) {
     const resp = await fetch(attachment.url);
     if (!resp.ok) {
-      return interaction.reply({
+      return sendReply({
         content: `❌ Could not download attachment (HTTP ${resp.status}). Please try again.`,
         ephemeral: true
       });
@@ -1275,25 +1282,26 @@ export async function handleImportCommand(interaction, db = getDb()) {
   }
 
   if (!fileBuffer || fileBuffer.length === 0) {
-    return interaction.reply({
+    return sendReply({
       content: '❌ Could not retrieve file content from attachment.',
       ephemeral: true
     });
   }
 
-  // 2. Identify file type using magic bytes and file metadata
+  // 2. Identify file format using magic bytes and file metadata
   const magicHeader = fileBuffer.subarray(0, 4).toString('utf-8');
   const fileName = (attachment.name || '').toLowerCase();
   const contentType = (attachment.contentType || '').toLowerCase();
 
   const isPdf = magicHeader === '%PDF' || fileName.endsWith('.pdf') || contentType.includes('pdf');
+  const isJson = fileName.endsWith('.json') || contentType.includes('json') || magicHeader.trim().startsWith('{') || magicHeader.trim().startsWith('[');
 
+  // BRANCH 1: PDF ROUTINE WORKFLOW
   if (isPdf) {
-    // ROUTE A: PDF PARSER
     try {
       const { schedules, events, courses } = await parseBracuPdf(fileBuffer);
       if (!schedules || schedules.length === 0) {
-        return interaction.reply({
+        return sendReply({
           content: '❌ No class schedules detected in the uploaded PDF. Please make sure the PDF is an official BRACU advising slip or routine.',
           ephemeral: true
         });
@@ -1397,66 +1405,74 @@ export async function handleImportCommand(interaction, db = getDb()) {
         .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
         .setTimestamp();
 
-      return interaction.reply({ embeds: [embed], ephemeral: true });
+      return sendReply({ embeds: [embed], ephemeral: true });
     } catch (err) {
       console.error('[!] PDF Parsing Error:', err);
-      return interaction.reply({
+      return sendReply({
         content: `❌ PDF Parsing Error: ${err.message}`,
         ephemeral: true
       });
     }
   }
 
-  // ROUTE B: JSON PARSER (Only reached if file is NOT a PDF)
-  let jsonContent = null;
-  try {
-    const rawText = fileBuffer.toString('utf-8');
-    jsonContent = JSON.parse(rawText);
-  } catch (err) {
-    return interaction.reply({
-      content: '❌ Invalid JSON file. Please ensure the attached file contains valid JSON or upload a PDF.',
-      ephemeral: true
-    });
+  // BRANCH 2: JSON BACKUP WORKFLOW
+  if (isJson) {
+    let jsonContent = null;
+    try {
+      const rawText = fileBuffer.toString('utf-8');
+      jsonContent = JSON.parse(rawText);
+    } catch (err) {
+      return sendReply({
+        content: '❌ Invalid JSON file. Please ensure the attached file contains valid JSON or upload a PDF.',
+        ephemeral: true
+      });
+    }
+
+    try {
+      const result = normalizeAndIngestPayload(jsonContent, db, user.id);
+
+      const courseLines = result.importedCourses.map(c => 
+        `• **${c.code}** (Sec ${c.section})${c.faculty ? ` • 👨‍🏫 ${c.faculty}` : ''}${c.room ? ` • 📍 ${c.room}` : ''}`
+      ).join('\n') || 'Courses imported';
+
+      const embed = new EmbedBuilder()
+        .setTitle('🎉 BRACU Routine Imported Successfully!')
+        .setDescription('Your routine and exam calendar have been linked to your Discord account.')
+        .setColor(0x10B981)
+        .addFields(
+          {
+            name: `📚 Enrolled Courses (${result.coursesInserted})`,
+            value: courseLines.length > 1024 ? courseLines.substring(0, 1020) + '...' : courseLines,
+            inline: false
+          },
+          {
+            name: '⏰ Class Sessions',
+            value: `**${result.routineSlotsInserted}** session(s) / week`,
+            inline: true
+          },
+          {
+            name: '🎯 Exams Detected',
+            value: `**${result.eventsInserted}** Midterm/Final(s)`,
+            inline: true
+          }
+        )
+        .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
+        .setTimestamp();
+
+      return sendReply({ embeds: [embed], ephemeral: true });
+    } catch (err) {
+      return sendReply({
+        content: `❌ Ingestion error: ${err.message}`,
+        ephemeral: true
+      });
+    }
   }
 
-  try {
-    const result = normalizeAndIngestPayload(jsonContent, db, user.id);
-
-    const courseLines = result.importedCourses.map(c => 
-      `• **${c.code}** (Sec ${c.section})${c.faculty ? ` • 👨‍🏫 ${c.faculty}` : ''}${c.room ? ` • 📍 ${c.room}` : ''}`
-    ).join('\n') || 'Courses imported';
-
-    const embed = new EmbedBuilder()
-      .setTitle('🎉 BRACU Routine Imported Successfully!')
-      .setDescription('Your routine and exam calendar have been linked to your Discord account.')
-      .setColor(0x10B981)
-      .addFields(
-        {
-          name: `📚 Enrolled Courses (${result.coursesInserted})`,
-          value: courseLines.length > 1024 ? courseLines.substring(0, 1020) + '...' : courseLines,
-          inline: false
-        },
-        {
-          name: '⏰ Class Sessions',
-          value: `**${result.routineSlotsInserted}** session(s) / week`,
-          inline: true
-        },
-        {
-          name: '🎯 Exams Detected',
-          value: `**${result.eventsInserted}** Midterm/Final(s)`,
-          inline: true
-        }
-      )
-      .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
-      .setTimestamp();
-
-    await interaction.reply({ embeds: [embed], ephemeral: true });
-  } catch (err) {
-    await interaction.reply({
-      content: `❌ Ingestion error: ${err.message}`,
-      ephemeral: true
-    });
-  }
+  // BRANCH 3: UNSUPPORTED FILE FORMAT
+  return sendReply({
+    content: '❌ Unsupported file format. Please upload an official BRACU routine PDF or a valid `schedule_raw.json` backup.',
+    ephemeral: true
+  });
 }
 
 /**

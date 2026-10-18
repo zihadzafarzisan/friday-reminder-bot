@@ -213,15 +213,18 @@ export function getRequestUserId(req, db) {
  * and rejects unauthenticated API requests immediately.
  */
 export function requireAuth(req, res, next) {
+  const originalUrl = req.originalUrl || req.url || req.path || '';
+  const isApiRoute = originalUrl.startsWith('/api/') || originalUrl === '/api' || req.path.startsWith('/api/') || req.baseUrl === '/api';
+
   // Public routes that bypass auth:
   if (
     req.path === '/ping' ||
     req.path === '/login' ||
     req.path === '/logout' ||
-    req.path.startsWith('/auth/') ||
-    req.path.startsWith('/api/auth/') ||
-    req.path === '/user/import-schedule' ||
-    req.path === '/api/user/import-schedule'
+    originalUrl.startsWith('/auth/') ||
+    originalUrl.startsWith('/api/auth/') ||
+    originalUrl === '/user/import-schedule' ||
+    originalUrl === '/api/user/import-schedule'
   ) {
     return next();
   }
@@ -230,15 +233,19 @@ export function requireAuth(req, res, next) {
   const sessionUser = req.signedCookies?.friday_session || req.cookies?.friday_session;
 
   if (!sessionUser && !req.authenticatedUser) {
-    // In test environment without session cookie and without enforce-auth, allow legacy tests
+    if (isApiRoute) {
+      if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-auth'] && !originalUrl.includes('upload-pdf')) {
+        req.userId = getRequestUserId(req, db);
+        return next();
+      }
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
     if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-auth']) {
       req.userId = getRequestUserId(req, db);
       return next();
     }
 
-    if (req.path.startsWith('/api/') || req.baseUrl === '/api') {
-      return res.status(401).json({ success: false, error: 'Unauthorized. Please log in.' });
-    }
     return res.redirect('/login');
   }
 
@@ -252,13 +259,19 @@ export function requireAuth(req, res, next) {
   }
 
   if (!user) {
+    if (isApiRoute) {
+      if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-auth'] && !originalUrl.includes('upload-pdf')) {
+        req.userId = getRequestUserId(req, db);
+        return next();
+      }
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
     if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-auth']) {
       req.userId = getRequestUserId(req, db);
       return next();
     }
-    if (req.path.startsWith('/api/') || req.baseUrl === '/api') {
-      return res.status(401).json({ success: false, error: 'Unauthorized. Please log in.' });
-    }
+
     return res.redirect('/login');
   }
 
@@ -886,7 +899,7 @@ export function createServer() {
         const authUser = req.authenticatedUser || getSessionUser(req, db);
         if (!authUser) {
           if (!(process.env.NODE_ENV === 'test' && (req.query?.user_id || req.headers?.['x-user-id']))) {
-            return res.status(401).json({ error: 'Unauthorized. Please log in.' });
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
           }
         }
 
