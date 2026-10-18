@@ -108,6 +108,20 @@ CREATE TABLE IF NOT EXISTS sessions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS class_schedules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    course_code TEXT NOT NULL,
+    section TEXT,
+    day_of_week TEXT NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    room TEXT,
+    event_type TEXT DEFAULT 'CLASS',
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_courses_user ON courses(user_id);
 CREATE INDEX IF NOT EXISTS idx_routine_slots_user_day ON routine_slots(user_id, day_of_week);
 CREATE INDEX IF NOT EXISTS idx_events_user_time ON events(user_id, start_time);
@@ -120,4 +134,7 @@ CREATE INDEX IF NOT EXISTS idx_auth_codes_code ON auth_codes(code);
 CREATE INDEX IF NOT EXISTS idx_auth_codes_user ON auth_codes(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_class_schedules_user ON class_schedules(user_id);
+CREATE INDEX IF NOT EXISTS idx_class_schedules_day ON class_schedules(user_id, day_of_week);
+
 

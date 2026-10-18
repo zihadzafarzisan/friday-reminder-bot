@@ -36,11 +36,11 @@ export const slashCommands = [
     ),
   new SlashCommandBuilder()
     .setName('import')
-    .setDescription('Import your BRACU course schedule directly by uploading schedule_raw.json')
+    .setDescription('Import your BRACU course schedule directly by uploading advising PDF or schedule_raw.json')
     .addAttachmentOption(option =>
       option
         .setName('file')
-        .setDescription('Upload your schedule_raw.json file')
+        .setDescription('Upload your advising PDF or schedule_raw.json file')
         .setRequired(true)
     ),
   new SlashCommandBuilder()

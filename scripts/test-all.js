@@ -17,7 +17,8 @@ const testSuites = [
   { name: 'Docker & Volume Configuration', script: 'scripts/test-docker-config.js' },
   { name: 'Unified Server & Bot Architecture', script: 'scripts/test-unified-process.js' },
   { name: 'Discord Code Authentication & Tenant Isolation', script: 'scripts/test-auth.js' },
-  { name: 'Dynamic Event Type Resolution (Class vs Lab)', script: 'scripts/test-event-type.js' }
+  { name: 'Dynamic Event Type Resolution (Class vs Lab)', script: 'scripts/test-event-type.js' },
+  { name: 'Routine PDF Upload & Schedule Parser', script: 'scripts/test-pdf-parser.js' }
 ];
 
 function runTest(suite) {

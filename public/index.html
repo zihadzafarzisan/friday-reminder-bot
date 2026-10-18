@@ -1026,16 +1026,16 @@
           <div class="import-card-header">
             <div class="import-card-icon">📁</div>
             <div>
-              <h3 style="font-size:1.1rem; font-weight:700;">Option A: File Upload</h3>
-              <p style="color:var(--text-muted); font-size:0.85rem;">Upload saved <code style="color:var(--accent);">schedule_raw.json</code></p>
+              <h3 style="font-size:1.1rem; font-weight:700;">Option A: Routine & Schedule Upload</h3>
+              <p style="color:var(--text-muted); font-size:0.85rem;">Upload your BRACU advising slip PDF or <code style="color:var(--accent);">schedule_raw.json</code></p>
             </div>
           </div>
 
           <div id="fileDropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
             <div style="font-size:2.2rem; margin-bottom:0.5rem;">📄</div>
-            <div style="font-weight:600; font-size:0.95rem; margin-bottom:0.25rem;">Click or Drag & Drop <code style="color:var(--accent);">schedule_raw.json</code> here</div>
-            <div style="font-size:0.8rem; color:var(--text-muted);">Supports standard BRACU advising JSON exports</div>
-            <input type="file" id="fileInput" accept=".json,application/json" style="display:none" onchange="handleFileSelected(event)">
+            <div style="font-weight:600; font-size:0.95rem; margin-bottom:0.25rem;">Click or Drag & Drop Advising PDF or <code style="color:var(--accent);">schedule_raw.json</code> here</div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">Supports BRACU Advising Slip PDF & Connect JSON exports</div>
+            <input type="file" id="fileInput" accept=".pdf,.json,application/pdf,application/json" style="display:none" onchange="handleFileSelected(event)">
           </div>
 
           <div id="selectedFileInfo" style="display:none; padding:0.6rem 0.85rem; border-radius:8px; background:rgba(99, 102, 241, 0.1); border:1px solid rgba(99, 102, 241, 0.25); font-size:0.85rem;">
@@ -2023,40 +2023,48 @@
       }
     }
 
+    let selectedRawFile = null;
+    let selectedFileType = null;
+    let selectedFileContent = null;
+
     function processSelectedFile(file) {
       const infoEl = document.getElementById('selectedFileInfo');
       const nameEl = document.getElementById('selectedFileName');
       const sizeEl = document.getElementById('selectedFileSize');
       const uploadBtn = document.getElementById('btnUploadSchedule');
 
+      selectedRawFile = file;
       nameEl.textContent = file.name;
       sizeEl.textContent = `${(file.size / 1024).toFixed(1)} KB`;
       infoEl.style.display = 'block';
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          selectedFileContent = JSON.parse(event.target.result);
-          uploadBtn.disabled = false;
-          showToast(`Loaded ${file.name}`);
-        } catch (err) {
-          showToast('Invalid JSON file format', 'error');
-          selectedFileContent = null;
-          uploadBtn.disabled = true;
-        }
-      };
-      reader.readAsText(file);
+      if (file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf') {
+        selectedFileType = 'pdf';
+        selectedFileContent = null;
+        uploadBtn.disabled = false;
+        showToast(`Loaded PDF: ${file.name}`);
+      } else {
+        selectedFileType = 'json';
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            selectedFileContent = JSON.parse(event.target.result);
+            uploadBtn.disabled = false;
+            showToast(`Loaded JSON: ${file.name}`);
+          } catch (err) {
+            showToast('Invalid JSON file format', 'error');
+            selectedFileContent = null;
+            selectedFileType = null;
+            uploadBtn.disabled = true;
+          }
+        };
+        reader.readAsText(file);
+      }
     }
 
     async function handleUploadFile() {
-      const pairingCode = document.getElementById('importPairingCode').value.trim();
-      if (!pairingCode) {
-        showToast('Please enter your Pairing Code first!', 'error');
-        document.getElementById('importPairingCode').focus();
-        return;
-      }
-      if (!selectedFileContent) {
-        showToast('Please select or drop a valid schedule JSON file.', 'error');
+      if (!selectedRawFile) {
+        showToast('Please select or drop a valid routine PDF or schedule JSON file.', 'error');
         return;
       }
 
@@ -2065,24 +2073,62 @@
       btn.innerHTML = '<span>⏳</span> Ingesting Schedule...';
 
       try {
-        const res = await fetch('/api/user/import-schedule', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            pairing_code: pairingCode,
-            schedule_data: selectedFileContent
-          })
-        });
+        if (selectedFileType === 'pdf') {
+          const formData = new FormData();
+          formData.append('routine', selectedRawFile);
 
-        const json = await res.json();
-        if (json.success) {
-          showToast('Schedule successfully imported!');
-          displayImportSuccess(json);
-          activeUserId = json.user_id;
-          localStorage.setItem('friday_active_user_id', String(activeUserId));
-          await loadDashboard();
+          const res = await fetch('/api/schedule/upload-pdf', {
+            method: 'POST',
+            body: formData
+          });
+
+          const json = await res.json();
+          if (json.success) {
+            showToast('Routine PDF parsed and schedule imported!');
+            displayPdfImportSuccess(json);
+            if (json.user_id) {
+              activeUserId = json.user_id;
+              localStorage.setItem('friday_active_user_id', String(activeUserId));
+            }
+            await loadDashboard();
+          } else {
+            showToast(json.error || 'Failed to upload PDF', 'error');
+          }
         } else {
-          showToast(json.error, 'error');
+          const pairingCode = document.getElementById('importPairingCode').value.trim();
+          if (!pairingCode) {
+            showToast('Please enter your Pairing Code first!', 'error');
+            document.getElementById('importPairingCode').focus();
+            btn.disabled = false;
+            btn.innerHTML = '<span>🚀</span> Ingest & Link Schedule';
+            return;
+          }
+          if (!selectedFileContent) {
+            showToast('Please select or drop a valid schedule JSON file.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<span>🚀</span> Ingest & Link Schedule';
+            return;
+          }
+
+          const res = await fetch('/api/user/import-schedule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              pairing_code: pairingCode,
+              schedule_data: selectedFileContent
+            })
+          });
+
+          const json = await res.json();
+          if (json.success) {
+            showToast('Schedule successfully imported!');
+            displayImportSuccess(json);
+            activeUserId = json.user_id;
+            localStorage.setItem('friday_active_user_id', String(activeUserId));
+            await loadDashboard();
+          } else {
+            showToast(json.error, 'error');
+          }
         }
       } catch (err) {
         showToast('Import error: ' + err.message, 'error');
@@ -2090,6 +2136,23 @@
         btn.disabled = false;
         btn.innerHTML = '<span>🚀</span> Ingest & Link Schedule';
       }
+    }
+
+    function displayPdfImportSuccess(json) {
+      const card = document.getElementById('importFeedbackCard');
+      const msg = document.getElementById('importFeedbackMsg');
+      const details = document.getElementById('importFeedbackDetails');
+
+      const data = json.data || {};
+      const coursesStr = (data.courses || []).map(c => `• ${c.code} (Section ${c.section}) - Room ${c.room || 'TBA'}`).join('\n') || 'Courses imported';
+
+      msg.innerHTML = `
+        ✅ Imported <strong>${json.courses_count || data.courses?.length || 0}</strong> courses, <strong>${json.schedules_count || data.schedules?.length || 0}</strong> weekly class/lab routine slots, and <strong>${json.events_count || data.events?.length || 0}</strong> university exam schedules.<br>
+        ${json.dm_sent ? '📬 <strong>A welcoming confirmation DM has been sent to your Discord account!</strong>' : 'ℹ️ Linked to your account.'}
+      `;
+
+      details.innerHTML = `User ID: #${json.user_id}\n\nEnrolled Routine:\n${coursesStr}`;
+      card.style.display = 'block';
     }
 
     function displayImportSuccess(json) {

@@ -344,6 +344,25 @@ export function runMigration(db = getDb()) {
     console.log('[+] Added discord_id column to users table.');
   }
 
+  // 9g. Ensure class_schedules table exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS class_schedules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      course_code TEXT NOT NULL,
+      section TEXT,
+      day_of_week TEXT NOT NULL,
+      start_time TEXT NOT NULL,
+      end_time TEXT NOT NULL,
+      room TEXT,
+      event_type TEXT DEFAULT 'CLASS',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_class_schedules_user ON class_schedules(user_id);
+    CREATE INDEX IF NOT EXISTS idx_class_schedules_day ON class_schedules(user_id, day_of_week);
+  `);
+
   // 10. Re-enable foreign keys
   db.exec('PRAGMA foreign_keys = ON;');
   console.log('[+] Phase 5 migration completed successfully.');

@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import multer from 'multer';
 import 'dotenv/config';
 import { getDb } from './db/index.js';
 import { getStoredDiscordUserId, getDhakaContext } from './reminder-engine.js';
@@ -13,6 +14,7 @@ import { EmbedBuilder } from 'discord.js';
 import { initBot, stopBot } from './index.js';
 import { resolveEventType } from './utils/room.js';
 import { classifyClassEvent } from './utils/eventClassifier.js';
+import { parseBracuPdf } from './services/routineParser.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -859,6 +861,217 @@ export function createServer() {
         discord_user_id: user.discord_user_id,
         dm_sent: dmDispatched,
         data: result
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  const uploadRoutinePdf = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }
+  }).single('routine');
+
+  // 9b. POST /api/schedule/upload-pdf - Ingest BRACU Advising Slip / Routine PDF
+  app.post('/api/schedule/upload-pdf', (req, res) => {
+    uploadRoutinePdf(req, res, async (err) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ success: false, error: 'File size exceeds limit of 5MB.' });
+        }
+        return res.status(400).json({ success: false, error: `Upload error: ${err.message}` });
+      }
+
+      try {
+        const authUser = req.authenticatedUser || getSessionUser(req, db);
+        if (!authUser) {
+          if (!(process.env.NODE_ENV === 'test' && (req.query?.user_id || req.headers?.['x-user-id']))) {
+            return res.status(401).json({ success: false, error: 'Unauthorized. Please log in.' });
+          }
+        }
+
+        if (!req.file || !req.file.buffer) {
+          return res.status(400).json({
+            success: false,
+            error: 'No PDF file uploaded. Please upload your routine PDF using form field "routine".'
+          });
+        }
+
+        const targetUserId = req.userId || (req.authenticatedUser ? req.authenticatedUser.id : getRequestUserId(req, db));
+        const { schedules, events, courses } = await parseBracuPdf(req.file.buffer);
+
+        if (!schedules || schedules.length === 0) {
+          return res.status(422).json({
+            success: false,
+            error: 'Could not detect any class schedules in the uploaded PDF. Please make sure you upload a valid BRACU advising slip or routine PDF.'
+          });
+        }
+
+        const insertSchedule = db.prepare(`
+          INSERT INTO class_schedules (user_id, course_code, section, day_of_week, start_time, end_time, room, event_type)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        const insertCourse = db.prepare(`
+          INSERT INTO courses (user_id, code, section, room, credits, name, faculty, updated_at)
+          VALUES (?, ?, ?, ?, 3.0, ?, ?, datetime('now'))
+          ON CONFLICT(user_id, code, section) DO UPDATE SET
+            room = excluded.room,
+            faculty = COALESCE(excluded.faculty, courses.faculty),
+            updated_at = datetime('now')
+          RETURNING id;
+        `);
+
+        const insertRoutineSlot = db.prepare(`
+          INSERT INTO routine_slots (user_id, course_id, day_of_week, start_time, end_time, room)
+          VALUES (?, ?, ?, ?, ?, ?)
+          ON CONFLICT(course_id, day_of_week, start_time) DO UPDATE SET
+            end_time = excluded.end_time,
+            room = excluded.room;
+        `);
+
+        const insertEvent = db.prepare(`
+          INSERT INTO events (user_id, course_id, type, title, start_time, end_time, room, is_custom)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+          ON CONFLICT(user_id, course_id, type, start_time) DO UPDATE SET
+            end_time = excluded.end_time,
+            room = excluded.room,
+            title = excluded.title;
+        `);
+
+        db.transaction(() => {
+          // Clean existing user schedule entries (preserve custom manual tasks)
+          db.prepare('DELETE FROM class_schedules WHERE user_id = ?').run(targetUserId);
+          db.prepare('DELETE FROM routine_slots WHERE user_id = ?').run(targetUserId);
+          db.prepare('DELETE FROM events WHERE user_id = ? AND is_custom = 0').run(targetUserId);
+          db.prepare('DELETE FROM courses WHERE user_id = ?').run(targetUserId);
+          db.prepare('DELETE FROM notification_logs WHERE user_id = ?').run(targetUserId);
+
+          // 1. Insert into class_schedules
+          for (const item of schedules) {
+            insertSchedule.run(
+              targetUserId,
+              item.course_code,
+              item.section,
+              item.day_of_week,
+              item.start_time,
+              item.end_time,
+              item.room,
+              item.event_type
+            );
+          }
+
+          // 2. Insert into courses and routine_slots
+          const courseIdMap = new Map();
+          for (const c of courses) {
+            const row = insertCourse.get(targetUserId, c.code, c.section, c.room || 'TBA', c.code, c.faculty || null);
+            courseIdMap.set(`${c.code}_${c.section}`, row.id);
+          }
+
+          for (const slot of schedules) {
+            let courseId = courseIdMap.get(`${slot.course_code}_${slot.section}`);
+            if (!courseId) {
+              const row = insertCourse.get(targetUserId, slot.course_code, slot.section, slot.room, slot.course_code, null);
+              courseId = row.id;
+              courseIdMap.set(`${slot.course_code}_${slot.section}`, courseId);
+            }
+            insertRoutineSlot.run(targetUserId, courseId, slot.day_of_week, slot.start_time, slot.end_time, slot.room);
+          }
+
+          // 3. Insert into events (Exams)
+          for (const ev of events) {
+            const courseRow = db.prepare('SELECT id FROM courses WHERE user_id = ? AND code = ?').get(targetUserId, ev.course_code);
+            const courseId = courseRow ? courseRow.id : null;
+            insertEvent.run(targetUserId, courseId, ev.type, ev.title, ev.start_time, ev.end_time, ev.room);
+          }
+        })();
+
+        // Record sync timestamp for this user
+        const { isoDhaka } = getDhakaContext(new Date());
+        db.prepare(`
+          INSERT INTO settings (key, value, updated_at)
+          VALUES (?, ?, datetime('now'))
+          ON CONFLICT(key) DO UPDATE SET
+            value = excluded.value,
+            updated_at = datetime('now');
+        `).run(`last_synced_user_${targetUserId}`, isoDhaka);
+
+        // Dispatch welcoming Discord DM if possible
+        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(targetUserId);
+        let dmDispatched = false;
+        if (process.env.DISCORD_BOT_TOKEN && user?.discord_user_id) {
+          try {
+            const client = await getDiscordClient(process.env.DISCORD_BOT_TOKEN, { attachListeners: false });
+            const courseLines = courses.map(c => 
+              `• **${c.code}** (Sec ${c.section})${c.faculty ? ` • 👨‍🏫 ${c.faculty}` : ''}${c.room ? ` • 📍 ${c.room}` : ''}`
+            ).join('\n') || 'Courses imported';
+
+            const welcomeEmbed = new EmbedBuilder()
+              .setTitle('🎉 BRACU Routine PDF Imported Successfully!')
+              .setDescription(`Welcome! Your class routine and exam calendar have been parsed and linked to FRIDAY.`)
+              .setColor(0x10B981)
+              .addFields(
+                {
+                  name: `📚 Enrolled Courses (${courses.length})`,
+                  value: courseLines.length > 1024 ? courseLines.substring(0, 1020) + '...' : courseLines,
+                  inline: false
+                },
+                {
+                  name: '⏰ Class & Lab Sessions',
+                  value: `**${schedules.length}** session(s) / week`,
+                  inline: true
+                },
+                {
+                  name: '🎯 Exams Detected',
+                  value: `**${events.length}** Midterm/Final(s)`,
+                  inline: true
+                }
+              )
+              .setFooter({ text: 'FRIDAY Reminder Bot • Multi-Tenant • Asia/Dhaka (+06:00)' })
+              .setTimestamp();
+
+            const dmRes = await sendDM(user.discord_user_id, { embeds: [welcomeEmbed] }, client);
+            dmDispatched = dmRes.success;
+          } catch (dmErr) {
+            console.warn(`[!] Welcome DM notice for user ${user?.discord_user_id}:`, dmErr.message);
+          }
+        }
+
+        res.json({
+          success: true,
+          message: 'Routine PDF parsed and schedule updated successfully!',
+          user_id: targetUserId,
+          schedules_count: schedules.length,
+          events_count: events.length,
+          courses_count: courses.length,
+          dm_sent: dmDispatched,
+          data: {
+            schedules,
+            events,
+            courses
+          }
+        });
+      } catch (uploadErr) {
+        res.status(500).json({ success: false, error: uploadErr.message });
+      }
+    });
+  });
+
+  // 9c. GET /api/schedule - Retrieve user class schedules
+  app.get('/api/schedule', (req, res) => {
+    try {
+      const targetUserId = getRequestUserId(req, db);
+      const schedules = db.prepare(`
+        SELECT * FROM class_schedules
+        WHERE user_id = ?
+        ORDER BY id ASC
+      `).all(targetUserId);
+
+      res.json({
+        success: true,
+        user_id: targetUserId,
+        count: schedules.length,
+        schedules
       });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });

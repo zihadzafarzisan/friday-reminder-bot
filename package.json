@@ -17,6 +17,7 @@
     "test:discord": "node scripts/test-discord-native.js",
     "test:docker": "node scripts/test-docker-config.js",
     "test:auth": "node scripts/test-auth.js",
+    "test:pdf": "node scripts/test-pdf-parser.js",
     "test:all": "node scripts/test-all.js",
     "commands:register": "node src/commands/register.js",
     "pm2:start": "pm2 start ecosystem.config.js",
@@ -28,7 +29,9 @@
     "cookie-parser": "^1.4.7",
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
-    "express": "^5.0.0"
+    "express": "^5.0.0",
+    "multer": "^2.4.0",
+    "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
     "playwright": "^1.40.0"
