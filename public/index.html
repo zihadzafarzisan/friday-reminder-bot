@@ -2093,7 +2093,8 @@
           // Note: DO NOT pass 'Content-Type' header so browser automatically sets boundary
           const res = await fetch('/api/schedule/upload-pdf', {
             method: 'POST',
-            body: formData
+            body: formData,
+            credentials: 'same-origin'
           });
 
           const contentType = res.headers.get('content-type') || '';

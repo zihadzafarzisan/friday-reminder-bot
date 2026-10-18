@@ -1415,18 +1415,25 @@ export async function handleImportCommand(interaction, db = getDb()) {
     }
   }
 
-  // BRANCH 2: JSON BACKUP WORKFLOW
-  if (isJson) {
-    let jsonContent = null;
-    try {
-      const rawText = fileBuffer.toString('utf-8');
-      jsonContent = JSON.parse(rawText);
-    } catch (err) {
-      return sendReply({
-        content: '❌ Invalid JSON file. Please ensure the attached file contains valid JSON or upload a PDF.',
-        ephemeral: true
-      });
-    }
+  // Under no circumstances allow a buffer starting with %PDF to reach JSON.parse()
+  if (fileBuffer.subarray(0, 4).toString('utf-8') === '%PDF') {
+    return sendReply({
+      content: '❌ Failed to process PDF routine. Please make sure the PDF is an official BRACU advising slip.',
+      ephemeral: true
+    });
+  }
+
+  // If not a PDF, wrap JSON parsing in a try/catch and return an explicit error
+  let jsonContent = null;
+  try {
+    const rawText = fileBuffer.toString('utf-8');
+    jsonContent = JSON.parse(rawText);
+  } catch (err) {
+    return sendReply({
+      content: '❌ Invalid JSON file. Please ensure the attached file contains valid JSON or upload a PDF.',
+      ephemeral: true
+    });
+  }
 
     try {
       const result = normalizeAndIngestPayload(jsonContent, db, user.id);
@@ -1467,13 +1474,6 @@ export async function handleImportCommand(interaction, db = getDb()) {
       });
     }
   }
-
-  // BRANCH 3: UNSUPPORTED FILE FORMAT
-  return sendReply({
-    content: '❌ Unsupported file format. Please upload an official BRACU routine PDF or a valid `schedule_raw.json` backup.',
-    ephemeral: true
-  });
-}
 
 /**
  * Builds the StringSelectMenuBuilder dropdown for filtering the routine

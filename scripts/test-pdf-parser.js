@@ -455,11 +455,11 @@ Final Exam: 2026-09-16 11:00 - 13:00
     }
   };
 
-  await itAsync('handleImportCommand rejects unsupported file formats with descriptive error', async () => {
+  await itAsync('handleImportCommand rejects non-PDF file failing JSON parse with descriptive error', async () => {
     await handleImportCommand(mockUnsupportedInter, db);
     assert.ok(mockUnsupportedInter._reply);
     assert.strictEqual(mockUnsupportedInter._reply.ephemeral, true);
-    assert.ok(mockUnsupportedInter._reply.content.includes('Unsupported file format'));
+    assert.ok(mockUnsupportedInter._reply.content.includes('Invalid JSON'));
   });
 
   await closeDiscordClient();

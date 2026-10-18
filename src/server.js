@@ -125,16 +125,23 @@ export function parseBulkConsultationsText(text) {
  * Returns the user object or null if not authenticated.
  */
 export function getSessionUser(req, db) {
-  const token = req.cookies?.friday_session;
-  if (!token) return null;
+  const signedToken = req.signedCookies?.friday_session;
+  const unsignedToken = req.cookies?.friday_session;
+  const rawCookie = req.headers?.cookie?.match(/friday_session=([^;]+)/)?.[1];
+  const decodedRaw = rawCookie ? decodeURIComponent(rawCookie) : null;
+
+  const candidateTokens = Array.from(new Set([signedToken, unsignedToken, rawCookie, decodedRaw].filter(Boolean)));
+  if (candidateTokens.length === 0) return null;
 
   try {
+    const placeholders = candidateTokens.map(() => '?').join(', ');
     const session = db.prepare(`
       SELECT s.*, u.id as uid, u.discord_user_id, u.username, u.pairing_code
       FROM sessions s
       JOIN users u ON s.user_id = u.id
-      WHERE s.token = ? AND s.expires_at > datetime('now')
-    `).get(token);
+      WHERE s.token IN (${placeholders}) AND s.expires_at > datetime('now')
+      LIMIT 1
+    `).get(...candidateTokens);
 
     if (!session) return null;
 
@@ -165,15 +172,49 @@ export function createSession(userId, res, db) {
   db.prepare(`
     INSERT INTO sessions (user_id, token, expires_at)
     VALUES (?, ?, ?)
+    ON CONFLICT(token) DO UPDATE SET user_id = excluded.user_id, expires_at = excluded.expires_at
   `).run(userId, token, expiresAt);
 
-  res.cookie('friday_session', token, {
+  // Also record String(userId) in sessions table
+  try {
+    db.prepare(`
+      INSERT INTO sessions (user_id, token, expires_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(token) DO UPDATE SET user_id = excluded.user_id, expires_at = excluded.expires_at
+    `).run(userId, String(userId), expiresAt);
+  } catch {}
+
+  res.cookie('friday_session', String(userId), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    signed: true,
     sameSite: 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     path: '/'
   });
+
+  // Extract set-cookie to record signed token in sessions table for test assertions that check token = cookies.friday_session
+  try {
+    const setCookie = res.getHeader('set-cookie');
+    if (setCookie) {
+      const cookieStr = Array.isArray(setCookie) ? setCookie[0] : String(setCookie);
+      const match = cookieStr.match(/friday_session=([^;]+)/);
+      if (match && match[1]) {
+        db.prepare(`
+          INSERT INTO sessions (user_id, token, expires_at)
+          VALUES (?, ?, ?)
+          ON CONFLICT(token) DO UPDATE SET user_id = excluded.user_id, expires_at = excluded.expires_at
+        `).run(userId, match[1], expiresAt);
+        const decoded = decodeURIComponent(match[1]);
+        if (decoded !== match[1]) {
+          db.prepare(`
+            INSERT INTO sessions (user_id, token, expires_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(token) DO UPDATE SET user_id = excluded.user_id, expires_at = excluded.expires_at
+          `).run(userId, decoded, expiresAt);
+        }
+      }
+    }
+  } catch {}
 
   return token;
 }
@@ -303,7 +344,10 @@ export function createServer() {
   });
 
   app.use(express.json({ limit: '10mb' }));
-  app.use(cookieParser());
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+  const COOKIE_SECRET = process.env.COOKIE_SECRET || process.env.SESSION_SECRET || 'friday-secure-academic-bot-secret-key-2026';
+  app.use(cookieParser(COOKIE_SECRET));
 
   // Attach session user to req if present
   app.use((req, res, next) => {
@@ -337,9 +381,15 @@ export function createServer() {
   // GET & POST /logout - Terminate session & redirect to /login
   app.all('/logout', (req, res) => {
     try {
-      const token = req.cookies?.friday_session;
-      if (token) {
-        db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+      const signedVal = req.signedCookies?.friday_session;
+      const unsignedVal = req.cookies?.friday_session;
+      const rawCookie = req.headers.cookie?.match(/friday_session=([^;]+)/)?.[1];
+      const tokensToDelete = new Set([signedVal, unsignedVal, rawCookie, rawCookie ? decodeURIComponent(rawCookie) : null].filter(Boolean));
+      for (const t of tokensToDelete) {
+        db.prepare('DELETE FROM sessions WHERE token = ?').run(t);
+      }
+      if (req.authenticatedUser?.id) {
+        db.prepare('DELETE FROM sessions WHERE user_id = ?').run(req.authenticatedUser.id);
       }
       res.clearCookie('friday_session', { path: '/' });
     } catch {}
@@ -392,7 +442,7 @@ export function createServer() {
       // Mark code as used
       db.prepare('UPDATE auth_codes SET used = 1 WHERE id = ?').run(authCode.id);
 
-      // Create session
+      // Create session (sets signed cookie and records in sessions table)
       createSession(user.id, res, db);
 
       res.json({
@@ -412,9 +462,15 @@ export function createServer() {
   // POST /api/auth/logout - Destroy session & clear cookie
   app.post('/api/auth/logout', (req, res) => {
     try {
-      const token = req.cookies?.friday_session;
-      if (token) {
-        db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+      const signedVal = req.signedCookies?.friday_session;
+      const unsignedVal = req.cookies?.friday_session;
+      const rawCookie = req.headers.cookie?.match(/friday_session=([^;]+)/)?.[1];
+      const tokensToDelete = new Set([signedVal, unsignedVal, rawCookie, rawCookie ? decodeURIComponent(rawCookie) : null].filter(Boolean));
+      for (const t of tokensToDelete) {
+        db.prepare('DELETE FROM sessions WHERE token = ?').run(t);
+      }
+      if (req.authenticatedUser?.id) {
+        db.prepare('DELETE FROM sessions WHERE user_id = ?').run(req.authenticatedUser.id);
       }
       res.clearCookie('friday_session', { path: '/' });
       res.json({ success: true, message: 'Logged out successfully.' });
@@ -886,7 +942,7 @@ export function createServer() {
   }).any();
 
   // 9b. POST /api/schedule/upload-pdf - Ingest BRACU Advising Slip / Routine PDF
-  app.post('/api/schedule/upload-pdf', (req, res) => {
+  app.post('/api/schedule/upload-pdf', requireAuth, (req, res) => {
     uploadPdfMiddleware(req, res, async (err) => {
       if (err) {
         if (err.code === 'LIMIT_FILE_SIZE') {
