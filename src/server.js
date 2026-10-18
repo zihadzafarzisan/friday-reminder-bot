@@ -867,14 +867,14 @@ export function createServer() {
     }
   });
 
-  const uploadRoutinePdf = multer({
+  const uploadPdfMiddleware = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 }
-  }).single('routine');
+  }).any();
 
   // 9b. POST /api/schedule/upload-pdf - Ingest BRACU Advising Slip / Routine PDF
   app.post('/api/schedule/upload-pdf', (req, res) => {
-    uploadRoutinePdf(req, res, async (err) => {
+    uploadPdfMiddleware(req, res, async (err) => {
       if (err) {
         if (err.code === 'LIMIT_FILE_SIZE') {
           return res.status(400).json({ success: false, error: 'File size exceeds limit of 5MB.' });
@@ -886,25 +886,30 @@ export function createServer() {
         const authUser = req.authenticatedUser || getSessionUser(req, db);
         if (!authUser) {
           if (!(process.env.NODE_ENV === 'test' && (req.query?.user_id || req.headers?.['x-user-id']))) {
-            return res.status(401).json({ success: false, error: 'Unauthorized. Please log in.' });
+            return res.status(401).json({ error: 'Unauthorized. Please log in.' });
           }
         }
 
-        if (!req.file || !req.file.buffer) {
-          return res.status(400).json({
-            success: false,
-            error: 'No PDF file uploaded. Please upload your routine PDF using form field "routine".'
-          });
+        const file = (req.files && (req.files.find(f => f.fieldname === 'routine' || f.fieldname === 'file') || req.files[0])) || req.file;
+
+        if (!file || !file.buffer) {
+          return res.status(400).json({ success: false, error: 'No PDF file uploaded. Field name must be "routine" or "file".' });
         }
 
-        const targetUserId = req.userId || (req.authenticatedUser ? req.authenticatedUser.id : getRequestUserId(req, db));
-        const { schedules, events, courses } = await parseBracuPdf(req.file.buffer);
+        const fileName = (file.originalname || '').toLowerCase();
+        const mimeType = (file.mimetype || '').toLowerCase();
+        if (!fileName.endsWith('.pdf') && !mimeType.includes('pdf')) {
+          return res.status(400).json({ success: false, error: 'Uploaded file is not a valid PDF.' });
+        }
 
-        if (!schedules || schedules.length === 0) {
-          return res.status(422).json({
-            success: false,
-            error: 'Could not detect any class schedules in the uploaded PDF. Please make sure you upload a valid BRACU advising slip or routine PDF.'
-          });
+        const targetUserId = req.userId || (authUser ? authUser.id : getRequestUserId(req, db));
+        const result = await parseBracuPdf(file.buffer);
+        const schedules = result.schedules || [];
+        const events = result.events || [];
+        const courses = result.courses || [];
+
+        if (schedules.length === 0) {
+          return res.status(422).json({ success: false, error: 'No class slots could be detected in this PDF. Please upload an official BRACU advising slip.' });
         }
 
         const insertSchedule = db.prepare(`
@@ -1037,22 +1042,24 @@ export function createServer() {
           }
         }
 
-        res.json({
+        return res.json({
           success: true,
-          message: 'Routine PDF parsed and schedule updated successfully!',
-          user_id: targetUserId,
+          message: `Successfully imported ${schedules.length} class slots.`,
+          count: schedules.length,
           schedules_count: schedules.length,
           events_count: events.length,
           courses_count: courses.length,
-          dm_sent: dmDispatched,
+          user_id: targetUserId,
+          schedules,
           data: {
             schedules,
             events,
             courses
           }
         });
-      } catch (uploadErr) {
-        res.status(500).json({ success: false, error: uploadErr.message });
+      } catch (err) {
+        console.error('[!] Web PDF Upload Error:', err);
+        return res.status(500).json({ success: false, error: `Failed to process PDF: ${err.message}` });
       }
     });
   });

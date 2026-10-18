@@ -72,7 +72,7 @@ function createTestPdf(text) {
 /**
  * Sends multipart/form-data upload request to test server
  */
-function uploadMultipart(server, path, fieldName, filename, fileBuffer, headers = {}) {
+function uploadMultipart(server, path, fieldName, filename, fileBuffer, headers = {}, fileMime = 'application/pdf') {
   return new Promise((resolve, reject) => {
     const port = server.address().port;
     const boundary = '----WebKitFormBoundaryTest' + Math.random().toString(36).substring(2);
@@ -80,7 +80,7 @@ function uploadMultipart(server, path, fieldName, filename, fileBuffer, headers 
     const pre = Buffer.from(
       `--${boundary}\r\n` +
       `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"\r\n` +
-      `Content-Type: application/pdf\r\n\r\n`
+      `Content-Type: ${fileMime}\r\n\r\n`
     );
     const post = Buffer.from(`\r\n--${boundary}--\r\n`);
     const body = Buffer.concat([pre, fileBuffer, post]);
@@ -298,7 +298,15 @@ Final Exam: Tuesday, September 15, 2026 8:30 AM - 10:30 AM
     assert.strictEqual(res.json?.success, false);
   });
 
-  await itAsync('POST /api/schedule/upload-pdf ingests valid PDF, inserts into class_schedules, courses, routine_slots and events', async () => {
+  await itAsync('POST /api/schedule/upload-pdf rejects non-PDF file with 400', async () => {
+    const textBuf = Buffer.from('Sample plain text data');
+    const res = await uploadMultipart(server, '/api/schedule/upload-pdf', 'routine', 'routine.txt', textBuf, cookieHeader1, 'text/plain');
+    assert.strictEqual(res.status, 400);
+    assert.strictEqual(res.json?.success, false);
+    assert.ok(res.json?.error?.includes('not a valid PDF'));
+  });
+
+  await itAsync('POST /api/schedule/upload-pdf ingests valid PDF with fieldname "routine"', async () => {
     const routineText = `
 HUM101 14 Sunday, Tuesday 02:00 PM - 03:20 PM 09G-28C
 Mid Exam: 2026-07-27 14:00 - 16:00
@@ -342,6 +350,23 @@ CSE330L 02 Thursday 02:00 PM - 05:00 PM 12F-30L
     assert.strictEqual(res.json?.success, true);
     assert.strictEqual(res.json?.count, 3);
     assert.strictEqual(res.json?.schedules.length, 3);
+  });
+
+  await itAsync('POST /api/schedule/upload-pdf accepts upload with fieldname "file"', async () => {
+    const routineText = `
+HUM101 14 Sunday, Tuesday 02:00 PM - 03:20 PM 09G-28C
+Mid Exam: 2026-07-27 14:00 - 16:00
+Final Exam: 2026-09-14 14:00 - 16:00
+
+CSE330L 02 Thursday 02:00 PM - 05:00 PM 12F-30L
+`;
+    const pdfBuf = createTestPdf(routineText);
+    const res = await uploadMultipart(server, '/api/schedule/upload-pdf', 'file', 'student_routine.pdf', pdfBuf, cookieHeader1);
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.json?.success, true);
+    assert.strictEqual(res.json?.user_id, 1);
+    assert.strictEqual(res.json?.schedules_count, 3);
+    assert.strictEqual(res.json?.count, 3);
   });
 
   console.log('\n--- TEST GROUP 6: Strict Multi-Tenant Isolation ---');

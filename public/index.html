@@ -2028,6 +2028,8 @@
     let selectedFileContent = null;
 
     function processSelectedFile(file) {
+      if (!file) return;
+
       const infoEl = document.getElementById('selectedFileInfo');
       const nameEl = document.getElementById('selectedFileName');
       const sizeEl = document.getElementById('selectedFileSize');
@@ -2038,28 +2040,38 @@
       sizeEl.textContent = `${(file.size / 1024).toFixed(1)} KB`;
       infoEl.style.display = 'block';
 
-      if (file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf') {
+      const fileNameLower = (file.name || '').toLowerCase();
+      const isPdf = fileNameLower.endsWith('.pdf') || (file.type && file.type.includes('pdf'));
+
+      if (isPdf) {
         selectedFileType = 'pdf';
         selectedFileContent = null;
         uploadBtn.disabled = false;
         showToast(`Loaded PDF: ${file.name}`);
-      } else {
-        selectedFileType = 'json';
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            selectedFileContent = JSON.parse(event.target.result);
-            uploadBtn.disabled = false;
-            showToast(`Loaded JSON: ${file.name}`);
-          } catch (err) {
-            showToast('Invalid JSON file format', 'error');
-            selectedFileContent = null;
-            selectedFileType = null;
-            uploadBtn.disabled = true;
-          }
-        };
-        reader.readAsText(file);
+        return; // Prevent FileReader from attempting JSON.parse on PDF files
       }
+
+      // JSON parsing flow
+      selectedFileType = 'json';
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          selectedFileContent = JSON.parse(event.target.result);
+          uploadBtn.disabled = false;
+          showToast(`Loaded JSON: ${file.name}`);
+        } catch (err) {
+          showToast('Invalid JSON file format. If uploading a routine PDF, ensure it has a .pdf extension.', 'error');
+          selectedFileContent = null;
+          selectedFileType = null;
+          uploadBtn.disabled = true;
+        }
+      };
+      reader.onerror = () => {
+        showToast('Failed to read file.', 'error');
+        selectedFileContent = null;
+        uploadBtn.disabled = true;
+      };
+      reader.readAsText(file);
     }
 
     async function handleUploadFile() {
@@ -2075,16 +2087,19 @@
       try {
         if (selectedFileType === 'pdf') {
           const formData = new FormData();
+          // Provide both 'routine' and 'file' fieldnames for defensive multer compatibility
           formData.append('routine', selectedRawFile);
+          formData.append('file', selectedRawFile);
 
+          // Note: DO NOT pass 'Content-Type' header so browser automatically sets boundary
           const res = await fetch('/api/schedule/upload-pdf', {
             method: 'POST',
             body: formData
           });
 
           const json = await res.json();
-          if (json.success) {
-            showToast('Routine PDF parsed and schedule imported!');
+          if (json.success || res.ok) {
+            showToast(json.message || 'Routine PDF parsed and schedule imported!');
             displayPdfImportSuccess(json);
             if (json.user_id) {
               activeUserId = json.user_id;
