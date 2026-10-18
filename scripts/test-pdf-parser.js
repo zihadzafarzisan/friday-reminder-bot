@@ -11,6 +11,7 @@ import {
   parseDateToIsoDhaka 
 } from '../src/services/routineParser.js';
 import { closeDiscordClient } from '../src/bot.js';
+import { handleImportCommand } from '../src/commands/handlers.js';
 
 const require = createRequire(import.meta.url);
 
@@ -408,6 +409,32 @@ Final Exam: 2026-09-16 11:00 - 13:00
     assert.strictEqual(u2Get.json?.user_id, 2);
     assert.strictEqual(u2Get.json?.count, 2);
     assert.strictEqual(u2Get.json?.schedules[0].course_code, 'MAT216');
+  });
+
+  console.log('\n--- TEST GROUP 7: Discord /import Magic Byte Detection ---');
+  const mockInter = {
+    user: { id: '1328051283080380559', tag: 'Student1' },
+    options: {
+      getAttachment: () => ({
+        name: 'advising_slip_raw', // NO .pdf extension
+        contentType: 'application/octet-stream', // Discord binary stream MIME
+        content: createTestPdf('CSE110 01 Sunday 10:00 AM - 11:20 AM 09G-28C\nMid Exam: 2026-07-27 14:00 - 16:00')
+      })
+    },
+    reply: function(payload) {
+      this._reply = payload;
+      return Promise.resolve(payload);
+    }
+  };
+
+  await itAsync('handleImportCommand detects PDF by magic bytes %PDF even with octet-stream and no .pdf extension', async () => {
+    await handleImportCommand(mockInter, db);
+    assert.ok(mockInter._reply);
+    assert.strictEqual(mockInter._reply.ephemeral, true);
+    assert.ok(mockInter._reply.embeds && mockInter._reply.embeds.length > 0);
+    const embed = mockInter._reply.embeds[0].data;
+    assert.ok(embed.title.includes('Routine Imported Successfully'));
+    assert.ok(embed.description.includes('1'));
   });
 
   await closeDiscordClient();

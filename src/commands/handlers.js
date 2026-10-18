@@ -32,7 +32,7 @@ export function generatePairingCode() {
 export function getUserFromInteraction(interaction, db = getDb()) {
   const discordId = interaction.user?.id;
   if (discordId) {
-    const user = db.prepare('SELECT * FROM users WHERE discord_user_id = ?').get(discordId);
+    const user = db.prepare('SELECT * FROM users WHERE discord_user_id = ? OR discord_id = ?').get(discordId, discordId);
     if (user) return user;
   }
   // Fallback to default user if interaction has no user object (e.g. unit tests)
@@ -1254,37 +1254,44 @@ export async function handleImportCommand(interaction, db = getDb()) {
     });
   }
 
-  const isPdf = Boolean(
-    (attachment.name && attachment.name.toLowerCase().endsWith('.pdf')) ||
-    (attachment.contentType && attachment.contentType.includes('pdf')) ||
-    (Buffer.isBuffer(attachment.content))
-  );
+  // 1. Download attachment buffer first
+  let fileBuffer = null;
+  if (Buffer.isBuffer(attachment.content)) {
+    fileBuffer = attachment.content;
+  } else if (typeof attachment.content === 'string') {
+    fileBuffer = Buffer.from(attachment.content, 'utf-8');
+  } else if (typeof attachment.content === 'object' && attachment.content !== null) {
+    fileBuffer = Buffer.from(JSON.stringify(attachment.content), 'utf-8');
+  } else if (attachment.url) {
+    const resp = await fetch(attachment.url);
+    if (!resp.ok) {
+      return interaction.reply({
+        content: `❌ Could not download attachment (HTTP ${resp.status}). Please try again.`,
+        ephemeral: true
+      });
+    }
+    const ab = await resp.arrayBuffer();
+    fileBuffer = Buffer.from(ab);
+  }
+
+  if (!fileBuffer || fileBuffer.length === 0) {
+    return interaction.reply({
+      content: '❌ Could not retrieve file content from attachment.',
+      ephemeral: true
+    });
+  }
+
+  // 2. Identify file type using magic bytes and file metadata
+  const magicHeader = fileBuffer.subarray(0, 4).toString('utf-8');
+  const fileName = (attachment.name || '').toLowerCase();
+  const contentType = (attachment.contentType || '').toLowerCase();
+
+  const isPdf = magicHeader === '%PDF' || fileName.endsWith('.pdf') || contentType.includes('pdf');
 
   if (isPdf) {
+    // ROUTE A: PDF PARSER
     try {
-      let pdfBuffer = null;
-      if (Buffer.isBuffer(attachment.content)) {
-        pdfBuffer = attachment.content;
-      } else if (attachment.url) {
-        const resp = await fetch(attachment.url);
-        if (!resp.ok) {
-          return interaction.reply({
-            content: `❌ Could not download attachment (HTTP ${resp.status}). Please try again.`,
-            ephemeral: true
-          });
-        }
-        const ab = await resp.arrayBuffer();
-        pdfBuffer = Buffer.from(ab);
-      }
-
-      if (!pdfBuffer) {
-        return interaction.reply({
-          content: '❌ Could not retrieve PDF file content.',
-          ephemeral: true
-        });
-      }
-
-      const { schedules, events, courses } = await parseBracuPdf(pdfBuffer);
+      const { schedules, events, courses } = await parseBracuPdf(fileBuffer);
       if (!schedules || schedules.length === 0) {
         return interaction.reply({
           content: '❌ No class schedules detected in the uploaded PDF. Please make sure the PDF is an official BRACU advising slip or routine.',
@@ -1292,6 +1299,18 @@ export async function handleImportCommand(interaction, db = getDb()) {
         });
       }
 
+      // Resolve tenant user_id
+      let targetUser = db.prepare('SELECT id FROM users WHERE discord_id = ? OR discord_user_id = ?').get(interaction.user.id, interaction.user.id);
+      if (!targetUser) {
+        const res = db.prepare('INSERT INTO users (discord_id, username) VALUES (?, ?)').run(
+          interaction.user.id,
+          interaction.user.tag || interaction.user.username || 'Student'
+        );
+        targetUser = { id: res.lastInsertRowid };
+      }
+      const tenantUserId = targetUser.id;
+
+      const deleteOld = db.prepare('DELETE FROM class_schedules WHERE user_id = ?');
       const insertSchedule = db.prepare(`
         INSERT INTO class_schedules (user_id, course_code, section, day_of_week, start_time, end_time, room, event_type)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -1325,78 +1344,62 @@ export async function handleImportCommand(interaction, db = getDb()) {
       `);
 
       db.transaction(() => {
-        db.prepare('DELETE FROM class_schedules WHERE user_id = ?').run(user.id);
-        db.prepare('DELETE FROM routine_slots WHERE user_id = ?').run(user.id);
-        db.prepare('DELETE FROM events WHERE user_id = ? AND is_custom = 0').run(user.id);
-        db.prepare('DELETE FROM courses WHERE user_id = ?').run(user.id);
-        db.prepare('DELETE FROM notification_logs WHERE user_id = ?').run(user.id);
+        deleteOld.run(tenantUserId);
+        db.prepare('DELETE FROM routine_slots WHERE user_id = ?').run(tenantUserId);
+        db.prepare('DELETE FROM events WHERE user_id = ? AND is_custom = 0').run(tenantUserId);
+        db.prepare('DELETE FROM courses WHERE user_id = ?').run(tenantUserId);
+        db.prepare('DELETE FROM notification_logs WHERE user_id = ?').run(tenantUserId);
 
-        for (const item of schedules) {
+        for (const s of schedules) {
           insertSchedule.run(
-            user.id,
-            item.course_code,
-            item.section,
-            item.day_of_week,
-            item.start_time,
-            item.end_time,
-            item.room,
-            item.event_type
+            tenantUserId,
+            s.course_code,
+            s.section || 1,
+            s.day_of_week,
+            s.start_time,
+            s.end_time,
+            s.room,
+            s.event_type || 'CLASS'
           );
         }
 
         const courseIdMap = new Map();
-        for (const c of courses) {
-          const row = insertCourse.get(user.id, c.code, c.section, c.room || 'TBA', c.code, c.faculty || null);
+        for (const c of (courses || [])) {
+          const row = insertCourse.get(tenantUserId, c.code, c.section, c.room || 'TBA', c.code, c.faculty || null);
           courseIdMap.set(`${c.code}_${c.section}`, row.id);
         }
 
         for (const slot of schedules) {
           let courseId = courseIdMap.get(`${slot.course_code}_${slot.section}`);
           if (!courseId) {
-            const row = insertCourse.get(user.id, slot.course_code, slot.section, slot.room, slot.course_code, null);
+            const row = insertCourse.get(tenantUserId, slot.course_code, slot.section, slot.room, slot.course_code, null);
             courseId = row.id;
             courseIdMap.set(`${slot.course_code}_${slot.section}`, courseId);
           }
-          insertRoutineSlot.run(user.id, courseId, slot.day_of_week, slot.start_time, slot.end_time, slot.room);
+          insertRoutineSlot.run(tenantUserId, courseId, slot.day_of_week, slot.start_time, slot.end_time, slot.room);
         }
 
-        for (const ev of events) {
-          const courseRow = db.prepare('SELECT id FROM courses WHERE user_id = ? AND code = ?').get(user.id, ev.course_code);
+        for (const ev of (events || [])) {
+          const courseRow = db.prepare('SELECT id FROM courses WHERE user_id = ? AND code = ?').get(tenantUserId, ev.course_code);
           const courseId = courseRow ? courseRow.id : null;
-          insertEvent.run(user.id, courseId, ev.type, ev.title, ev.start_time, ev.end_time, ev.room);
+          insertEvent.run(tenantUserId, courseId, ev.type, ev.title, ev.start_time, ev.end_time, ev.room);
         }
       })();
 
-      const courseLines = courses.map(c => 
-        `• **${c.code}** (Sec ${c.section})${c.faculty ? ` • 👨‍🏫 ${c.faculty}` : ''}${c.room ? ` • 📍 ${c.room}` : ''}`
-      ).join('\n') || 'Courses imported';
-
       const embed = new EmbedBuilder()
-        .setTitle('🎉 BRACU Routine PDF Imported Successfully!')
-        .setDescription('Your routine and exam calendar have been parsed and linked to your Discord account.')
+        .setTitle('✅ BRACU Routine Imported Successfully')
         .setColor(0x10B981)
+        .setDescription(`Imported **${schedules.length}** weekly class slots into your private schedule.`)
         .addFields(
-          {
-            name: `📚 Enrolled Courses (${courses.length})`,
-            value: courseLines.length > 1024 ? courseLines.substring(0, 1020) + '...' : courseLines,
-            inline: false
-          },
-          {
-            name: '⏰ Class & Lab Sessions',
-            value: `**${schedules.length}** session(s) / week`,
-            inline: true
-          },
-          {
-            name: '🎯 Exams Detected',
-            value: `**${events.length}** Midterm/Final(s)`,
-            inline: true
-          }
+          { name: '📚 Classes', value: `${schedules.length} slots`, inline: true },
+          { name: '🎯 Exams', value: `${(events || []).length} dates`, inline: true }
         )
         .setFooter({ text: 'FRIDAY Academic Assistant • Asia/Dhaka (+06:00)' })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed], ephemeral: true });
     } catch (err) {
+      console.error('[!] PDF Parsing Error:', err);
       return interaction.reply({
         content: `❌ PDF Parsing Error: ${err.message}`,
         ephemeral: true
@@ -1404,36 +1407,14 @@ export async function handleImportCommand(interaction, db = getDb()) {
     }
   }
 
+  // ROUTE B: JSON PARSER (Only reached if file is NOT a PDF)
   let jsonContent = null;
-  if (attachment.content) {
-    try {
-      jsonContent = typeof attachment.content === 'string' ? JSON.parse(attachment.content) : attachment.content;
-    } catch {
-      return interaction.reply({
-        content: '❌ Invalid JSON file. Please ensure the attached file contains valid JSON or upload a PDF.',
-        ephemeral: true
-      });
-    }
-  } else if (attachment.url) {
-    try {
-      const resp = await fetch(attachment.url);
-      if (!resp.ok) {
-        return interaction.reply({
-          content: `❌ Could not download attachment (HTTP ${resp.status}). Please try again.`,
-          ephemeral: true
-        });
-      }
-      const text = await resp.text();
-      jsonContent = JSON.parse(text);
-    } catch (err) {
-      return interaction.reply({
-        content: `❌ Failed to parse JSON file: ${err.message}`,
-        ephemeral: true
-      });
-    }
-  } else {
+  try {
+    const rawText = fileBuffer.toString('utf-8');
+    jsonContent = JSON.parse(rawText);
+  } catch (err) {
     return interaction.reply({
-      content: '❌ No readable content found in attachment.',
+      content: '❌ Invalid JSON file. Please ensure the attached file contains valid JSON or upload a PDF.',
       ephemeral: true
     });
   }
