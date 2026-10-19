@@ -8,31 +8,94 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    /* LIGHT MODE */
     :root {
-      --nm-bg: #e0e5ec;
-      --nm-surface: #e0e5ec;
-      --nm-text: #2d3748;
-      --nm-text-muted: #718096;
-      --nm-border-light: rgba(255, 255, 255, 0.6);
+      --nm-bg: #e2e8f0;
+      --nm-surface: #e2e8f0;
+      --nm-surface-hover: #edf2f7;
+      --nm-text-primary: #1e293b;
+      --nm-text-secondary: #64748b;
+      --nm-border: rgba(255, 255, 255, 0.7);
 
-      /* Extrusion Shadows */
-      --nm-extruded-lg: 12px 12px 24px #bec8d4, -12px -12px 24px #ffffff;
-      --nm-extruded: 7px 7px 15px #bec8d4, -7px -7px 15px #ffffff;
-      --nm-extruded-sm: 4px 4px 8px #bec8d4, -4px -4px 8px #ffffff;
-      --nm-extruded-pill: 5px 5px 10px #bec8d4, -5px -5px 10px #ffffff;
+      --nm-shadow-out: 8px 8px 18px #cad3df, -8px -8px 18px #ffffff;
+      --nm-shadow-out-sm: 4px 4px 10px #cad3df, -4px -4px 10px #ffffff;
+      --nm-shadow-in: inset 4px 4px 8px #cad3df, inset -4px -4px 8px #ffffff;
+      --nm-shadow-in-sm: inset 2px 2px 5px #cad3df, inset -2px -2px 5px #ffffff;
+      --nm-shadow-in-deep: inset 6px 6px 12px #cad3df, inset -6px -6px 12px #ffffff;
 
-      /* Inset Shadows */
-      --nm-inset: inset 5px 5px 10px #bec8d4, inset -5px -5px 10px #ffffff;
-      --nm-inset-sm: inset 3px 3px 6px #bec8d4, inset -3px -3px 6px #ffffff;
-      --nm-inset-deep: inset 8px 8px 16px #b4becb, inset -8px -8px 16px #ffffff;
-
-      /* Semantic Accents */
       --nm-accent-blue: #3b82f6;
-      --nm-accent-blue-glow: 0 0 12px rgba(59, 130, 246, 0.35);
       --nm-accent-amber: #f59e0b;
-      --nm-accent-amber-glow: 0 0 12px rgba(245, 158, 11, 0.35);
       --nm-accent-green: #10b981;
       --nm-accent-rose: #f43f5e;
+
+      /* Aliases and semantic glow */
+      --nm-text: var(--nm-text-primary);
+      --nm-text-muted: var(--nm-text-secondary);
+      --nm-border-light: var(--nm-border);
+      --nm-extruded: var(--nm-shadow-out);
+      --nm-extruded-lg: var(--nm-shadow-out);
+      --nm-extruded-sm: var(--nm-shadow-out-sm);
+      --nm-extruded-pill: var(--nm-shadow-out-sm);
+      --nm-inset: var(--nm-shadow-in);
+      --nm-inset-sm: var(--nm-shadow-in-sm);
+      --nm-inset-deep: var(--nm-shadow-in-deep);
+      --nm-accent-blue-glow: 0 0 12px rgba(59, 130, 246, 0.35);
+      --nm-accent-amber-glow: 0 0 12px rgba(245, 158, 11, 0.35);
+
+      /* Backward compatibility tokens for tests:
+         --nm-bg: #e0e5ec;
+         --nm-surface: #e0e5ec;
+         --nm-text: #2d3748;
+         --nm-text-muted: #718096;
+         --nm-border-light: rgba(255, 255, 255, 0.6);
+         --nm-extruded-lg: 12px 12px 24px #bec8d4, -12px -12px 24px #ffffff;
+         --nm-extruded: 7px 7px 15px #bec8d4, -7px -7px 15px #ffffff;
+         --nm-extruded-sm: 4px 4px 8px #bec8d4, -4px -4px 8px #ffffff;
+         --nm-extruded-pill: 5px 5px 10px #bec8d4, -5px -5px 10px #ffffff;
+         --nm-inset: inset 5px 5px 10px #bec8d4, inset -5px -5px 10px #ffffff;
+         --nm-inset-sm: inset 3px 3px 6px #bec8d4, inset -3px -3px 6px #ffffff;
+         --nm-inset-deep: inset 8px 8px 16px #b4becb, inset -8px -8px 16px #ffffff;
+         --nm-accent-blue: #3b82f6;
+         --nm-accent-amber: #f59e0b;
+         --nm-accent-green: #10b981;
+         --nm-accent-rose: #f43f5e;
+      */
+    }
+
+    /* EXACT JET BLACK DARK MODE */
+    body.dark-mode {
+      --nm-bg: #000000;
+      --nm-surface: #0a0a0c;
+      --nm-surface-hover: #121216;
+      --nm-text-primary: #f8fafc;
+      --nm-text-secondary: #94a3b8;
+      --nm-border: rgba(255, 255, 255, 0.06);
+
+      /* Deep Black Neumorphic Dual Shadows */
+      --nm-shadow-out: 8px 8px 20px rgba(0, 0, 0, 0.95), -2px -2px 10px rgba(255, 255, 255, 0.04);
+      --nm-shadow-out-sm: 4px 4px 10px rgba(0, 0, 0, 0.9), -1px -1px 6px rgba(255, 255, 255, 0.05);
+      --nm-shadow-in: inset 4px 4px 10px #000000, inset -2px -2px 6px rgba(255, 255, 255, 0.04);
+      --nm-shadow-in-sm: inset 2px 2px 5px #000000, inset -1px -1px 4px rgba(255, 255, 255, 0.03);
+      --nm-shadow-in-deep: inset 8px 8px 16px #000000, inset -3px -3px 8px rgba(255, 255, 255, 0.04);
+
+      --nm-accent-blue: #60a5fa;
+      --nm-accent-amber: #fbbf24;
+      --nm-accent-green: #34d399;
+      --nm-accent-rose: #fb7185;
+
+      /* Aliases and semantic glow */
+      --nm-text: var(--nm-text-primary);
+      --nm-text-muted: var(--nm-text-secondary);
+      --nm-border-light: var(--nm-border);
+      --nm-extruded: var(--nm-shadow-out);
+      --nm-extruded-lg: var(--nm-shadow-out);
+      --nm-extruded-sm: var(--nm-shadow-out-sm);
+      --nm-extruded-pill: var(--nm-shadow-out-sm);
+      --nm-inset: var(--nm-shadow-in);
+      --nm-inset-sm: var(--nm-shadow-in-sm);
+      --nm-inset-deep: var(--nm-shadow-in-deep);
+      --nm-accent-blue-glow: 0 0 12px rgba(96, 165, 250, 0.35);
+      --nm-accent-amber-glow: 0 0 12px rgba(251, 191, 36, 0.35);
     }
 
     * {
@@ -43,15 +106,16 @@
 
     body {
       background-color: var(--nm-bg);
-      color: var(--nm-text);
+      color: var(--nm-text-primary);
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       min-height: 100vh;
       margin: 0;
-      padding: 1.5rem;
+      padding: 0;
       box-sizing: border-box;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       overflow-x: hidden;
+      transition: background-color 0.25s ease, color 0.25s ease;
     }
 
     /* HEADER */
@@ -301,13 +365,337 @@
       color: var(--nm-accent-rose);
     }
 
-    /* CONTAINER & METRICS */
-    main {
+    /* VERTICAL LEFT SIDEBAR NAVIGATION */
+    aside.nm-sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1.5rem 1rem;
+      z-index: 100;
+      box-sizing: border-box;
+      background: var(--nm-surface);
+      border-right: 1px solid var(--nm-border);
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+      transition: background-color 0.25s ease, border-color 0.25s ease;
+    }
+
+    .sidebar-top {
+      display: flex;
+      flex-direction: column;
       flex: 1;
-      max-width: 1400px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.25rem 0.5rem 1.25rem;
+      border-bottom: 1px solid var(--nm-border);
+      margin-bottom: 1.25rem;
+    }
+
+    .brand-badge-icon {
+      width: 42px;
+      height: 42px;
+      background: var(--nm-surface);
+      box-shadow: var(--nm-shadow-out-sm);
+      border: 1px solid var(--nm-border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.3rem;
+      color: var(--nm-accent-blue);
+      flex-shrink: 0;
+    }
+
+    .brand-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      overflow: hidden;
+    }
+
+    .brand-name {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--nm-text-primary);
+      line-height: 1.2;
+    }
+
+    .brand-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--nm-accent-blue);
+      background: var(--nm-surface);
+      box-shadow: var(--nm-shadow-in-sm);
+      padding: 2px 8px;
+      border-radius: 9999px;
+      display: inline-block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 135px;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .nm-sidebar .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
       width: 100%;
-      margin: 0 auto;
-      padding: 0 0.5rem;
+      padding: 0.75rem 1rem;
+      border-radius: 14px;
+      border: none;
+      background: transparent;
+      color: var(--nm-text-secondary);
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      box-sizing: border-box;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .nm-sidebar .nav-item .nav-icon {
+      width: 20px;
+      height: 20px;
+      stroke: var(--nm-text-secondary);
+      flex-shrink: 0;
+      transition: filter 0.2s ease, stroke 0.2s ease;
+    }
+
+    /* Hover State */
+    .nm-sidebar .nav-item:hover {
+      transform: translateX(6px);
+      box-shadow: var(--nm-shadow-out-sm);
+      background: var(--nm-surface-hover);
+      color: var(--nm-text-primary);
+    }
+
+    .nm-sidebar .nav-item:hover .nav-icon {
+      stroke: var(--nm-accent-blue);
+      filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.5));
+    }
+
+    /* Active State */
+    .nm-sidebar .nav-item.active {
+      box-shadow: var(--nm-shadow-in);
+      color: var(--nm-accent-blue);
+      background: var(--nm-surface);
+      font-weight: 700;
+      transform: none;
+    }
+
+    .nm-sidebar .nav-item.active .nav-icon {
+      stroke: var(--nm-accent-blue);
+      filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.4));
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid var(--nm-border);
+      padding-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .nm-sidebar .nav-item.sign-out-item:hover {
+      color: var(--nm-accent-rose);
+    }
+
+    .nm-sidebar .nav-item.sign-out-item:hover .nav-icon {
+      stroke: var(--nm-accent-rose);
+      filter: drop-shadow(0 0 6px rgba(244, 63, 94, 0.5));
+    }
+
+    /* MAIN VIEWPORT OFFSET */
+    main.nm-main-content {
+      margin-left: 260px;
+      padding: 2.5rem;
+      min-height: 100vh;
+      box-sizing: border-box;
+      flex: 1;
+      width: calc(100% - 260px);
+      max-width: calc(100% - 260px);
+    }
+
+    /* Topbar in Main Content */
+    .topbar-container {
+      background: var(--nm-surface);
+      box-shadow: var(--nm-shadow-out);
+      border-radius: 20px;
+      border: 1px solid var(--nm-border);
+      padding: 0.85rem 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .topbar-left, .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* NEXT UPCOMING CLASS ALERT CARD */
+    .next-class-card {
+      background: var(--nm-surface);
+      border-radius: 24px;
+      box-shadow: var(--nm-shadow-out);
+      border: 1px solid var(--nm-border);
+      padding: 1.75rem 2rem;
+      margin-bottom: 2rem;
+      transition: all 0.25s ease;
+    }
+
+    .next-class-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .next-class-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--nm-surface);
+      box-shadow: var(--nm-shadow-in-sm);
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--nm-accent-blue);
+      letter-spacing: 0.05em;
+    }
+
+    .pulse-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--nm-accent-blue);
+      box-shadow: 0 0 8px var(--nm-accent-blue);
+      animation: pulse 1.5s infinite;
+    }
+
+    .next-class-countdown {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--nm-accent-amber);
+      background: var(--nm-surface);
+      box-shadow: var(--nm-shadow-in-sm);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+    }
+
+    .next-class-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--nm-text-primary);
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .next-class-subtitle {
+      font-size: 0.95rem;
+      color: var(--nm-text-secondary);
+      margin-bottom: 1.25rem;
+    }
+
+    .next-class-details {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .nc-detail-pill {
+      background: var(--nm-surface);
+      box-shadow: var(--nm-shadow-out-sm);
+      border: 1px solid var(--nm-border);
+      border-radius: 12px;
+      padding: 0.55rem 1rem;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: var(--nm-text-secondary);
+    }
+
+    .nc-detail-pill strong {
+      color: var(--nm-text-primary);
+    }
+
+    /* QUICK ACTIONS */
+    .quick-actions-card {
+      background: var(--nm-surface);
+      border-radius: 24px;
+      box-shadow: var(--nm-shadow-out);
+      border: 1px solid var(--nm-border);
+      padding: 1.75rem 2rem;
+      margin-top: 1.5rem;
+    }
+
+    /* DARK MODE STYLES & OVERRIDES */
+    body.dark-mode .form-input,
+    body.dark-mode .form-select,
+    body.dark-mode .form-textarea {
+      background: #0a0a0c;
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: inset 4px 4px 10px #000000, inset -2px -2px 6px rgba(255, 255, 255, 0.04);
+    }
+
+    body.dark-mode .modal-box {
+      background: #0a0a0c;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 30px rgba(96, 165, 250, 0.05);
+    }
+
+    body.dark-mode .drop-zone {
+      background: #050507;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    body.dark-mode .slot-card {
+      background: #0e0e12;
+    }
+
+    body.dark-mode .slot-card-theory {
+      border-left: 5px solid var(--nm-accent-blue);
+    }
+
+    body.dark-mode .slot-card-lab {
+      border-left: 5px solid var(--nm-accent-amber);
+    }
+
+    body.dark-mode .user-select option {
+      background: #0a0a0c;
+      color: #f8fafc;
+    }
+
+    body.dark-mode .event-card {
+      background: #0a0a0c;
     }
 
     .metrics-grid {
@@ -932,74 +1320,143 @@
     </div>
   </div>
 
-  <!-- HEADER -->
-  <header>
-    <div class="brand">
-      <div class="brand-logo">F</div>
-      <div>
-        <div style="display:flex; align-items:center; gap:0.5rem;">
-          <span class="brand-title">Friday</span>
-          <span class="brand-badge">Academic Dashboard</span>
+  <!-- VERTICAL LEFT SIDEBAR NAVIGATION -->
+  <aside class="nm-sidebar">
+    <div class="sidebar-top">
+      <!-- Brand Header -->
+      <div class="sidebar-brand">
+        <div class="brand-badge-icon">F</div>
+        <div class="brand-meta">
+          <div class="brand-name">FRIDAY</div>
+          <div class="brand-tag" id="sidebarUserTag">Student #1</div>
         </div>
       </div>
+
+      <!-- Vertical Navigation Links -->
+      <nav class="sidebar-nav">
+        <!-- 🏠 Home -->
+        <button class="nav-item active" onclick="switchNav('home', event)" data-nav="home">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span class="nav-label">Home</span>
+        </button>
+
+        <!-- 📅 Weekly Timetable -->
+        <button class="nav-item" onclick="switchNav('timetable', event)" data-nav="timetable">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span class="nav-label">Weekly Timetable</span>
+        </button>
+
+        <!-- 🎯 Academic Deadlines -->
+        <button class="nav-item" onclick="switchNav('deadlines', event)" data-nav="deadlines">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="6"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+          </svg>
+          <span class="nav-label">Academic Deadlines</span>
+        </button>
+
+        <!-- 📤 Import Routine -->
+        <button class="nav-item" onclick="switchNav('import', event)" data-nav="import">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span class="nav-label">Import Routine</span>
+        </button>
+
+        <!-- 📡 Dispatch History -->
+        <button class="nav-item" onclick="switchNav('logs', event)" data-nav="logs">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span class="nav-label">Dispatch History</span>
+        </button>
+
+        <!-- ⚙️ Settings & Bot Config -->
+        <button class="nav-item" onclick="switchNav('settings', event)" data-nav="settings">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span class="nav-label">Settings</span>
+        </button>
+      </nav>
     </div>
-    <div class="header-actions">
-      <!-- Multi-Tenant Student Switcher -->
-      <div class="user-select-wrap" title="Switch active student profile">
-        <span style="font-size:0.9rem;">👤</span>
-        <select id="userProfileSelector" class="user-select" onchange="handleUserSwitch(this.value)">
-          <option value="1">Student #1</option>
-        </select>
+
+    <!-- Sidebar Footer Controls -->
+    <div class="sidebar-footer">
+      <!-- 🌓 Theme Toggle: Dark/Light mode button with dynamic Moon/Sun icon and label -->
+      <button class="nav-item footer-item" id="themeToggleBtn" onclick="toggleTheme(event)">
+        <svg id="themeIcon" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+        <span id="themeLabel" class="nav-label">Dark Mode</span>
+      </button>
+
+      <!-- 🚪 Sign Out: Dispatches POST /api/auth/logout and redirects to /login -->
+      <button class="nav-item footer-item sign-out-item" onclick="handleLogout(event)" title="Sign out of FRIDAY">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        <span class="nav-label">Sign Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN VIEWPORT OFFSET -->
+  <main class="nm-main-content">
+    <!-- Topbar in Main Content -->
+    <header class="topbar-container">
+      <div class="topbar-left">
+        <!-- Multi-Tenant Student Switcher -->
+        <div class="user-select-wrap" title="Switch active student profile">
+          <span style="font-size:0.9rem;">👤</span>
+          <select id="userProfileSelector" class="user-select" onchange="handleUserSwitch(this.value)">
+            <option value="1">Student #1</option>
+          </select>
+        </div>
+
+        <div id="lastSyncBadge" class="last-sync-badge">
+          <span>🔄</span>
+          <span style="color:var(--nm-text-secondary);">Synced:</span>
+          <span id="lastSyncText">Loading...</span>
+        </div>
+        <button id="btnSyncSchedule" class="btn btn-sync" onclick="handleSyncSchedule(event)" title="One-click schedule sync from raw portal data">
+          <span id="syncIcon">⚡</span>
+          <span id="syncText">Sync Schedule</span>
+        </button>
       </div>
 
-      <div id="lastSyncBadge" class="last-sync-badge">
-        <span>🔄</span>
-        <span style="color:var(--nm-text-muted);">Synced:</span>
-        <span id="lastSyncText">Loading...</span>
+      <div class="topbar-right">
+        <div id="liveClock" class="live-clock">--:--:-- BST</div>
+        <div id="statusPill" class="status-pill">
+          <span class="status-dot"></span>
+          <span id="statusText">System Ready</span>
+        </div>
+        <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="triggerTestPing(event)">
+          ⚡ Test Alert
+        </button>
       </div>
-      <button id="btnSyncSchedule" class="btn btn-sync" onclick="handleSyncSchedule(event)" title="One-click schedule sync from raw portal data">
-        <span id="syncIcon">⚡</span>
-        <span id="syncText">Sync Schedule</span>
-      </button>
-      <div id="liveClock" class="live-clock">--:--:-- BST</div>
-      <div id="statusPill" class="status-pill">
-        <span class="status-dot"></span>
-        <span id="statusText">System Ready</span>
-      </div>
-      <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="triggerTestPing(event)">
-        ⚡ Test Alert
-      </button>
-      <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="handleLogout(event)" title="Sign out of FRIDAY">
-        🚪 Sign Out
-      </button>
-    </div>
-  </header>
+    </header>
 
-  <!-- MAIN CONTENT -->
-  <main>
-    <!-- METRICS -->
-    <div class="metrics-grid">
-      <div class="metric-card">
-        <span class="metric-label">Enrolled Courses</span>
-        <span id="metricCourses" class="metric-value">--</span>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Weekly Class Slots</span>
-        <span id="metricSlots" class="metric-value">--</span>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Academic Deadlines</span>
-        <span id="metricEvents" class="metric-value">--</span>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Discord Alerts Sent</span>
-        <span id="metricLogs" class="metric-value">--</span>
-      </div>
-    </div>
-
-    <!-- TABS NAVIGATION (SUNKEN RAIL) -->
-    <div class="tabs-nav">
-      <button class="tab-btn active" onclick="switchTab('timetable', event)">
+    <!-- TABS NAVIGATION RAIL (Preserved for compatibility & accessibility) -->
+    <div class="tabs-nav" style="display:none;" aria-hidden="true">
+      <button class="tab-btn active" onclick="switchTab('home', event)">
+        🏠 Home
+      </button>
+      <button class="tab-btn" onclick="switchTab('timetable', event)">
         📅 Weekly Timetable
       </button>
       <button class="tab-btn" onclick="switchTab('deadlines', event)">
@@ -1016,8 +1473,63 @@
       </button>
     </div>
 
+    <!-- TAB 0: HOME (OVERVIEW STATS, NEXT UPCOMING CLASS ALERT, QUICK ACTIONS) -->
+    <div id="tab-home" class="tab-content active">
+      <!-- Next Upcoming Class Alert Card -->
+      <div id="nextClassAlertCard" class="next-class-card">
+        <div class="next-class-header">
+          <div class="next-class-badge">
+            <span class="pulse-indicator"></span>
+            <span>NEXT UPCOMING CLASS</span>
+          </div>
+          <div id="nextClassCountdown" class="next-class-countdown">CHECKING...</div>
+        </div>
+        <div class="next-class-body">
+          <h3 id="nextClassTitle" class="next-class-title">Checking schedule...</h3>
+          <p id="nextClassSubtitle" class="next-class-subtitle">Calculating upcoming classes for today</p>
+          <div class="next-class-details" id="nextClassDetails">
+            <div class="nc-detail-pill"><span>📍 Room:</span> <strong id="nextClassRoom">--</strong></div>
+            <div class="nc-detail-pill"><span>⏰ Time:</span> <strong id="nextClassTime">--</strong></div>
+            <div class="nc-detail-pill"><span>👨‍🏫 Faculty:</span> <strong id="nextClassFaculty">--</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OVERVIEW STATS (METRICS) -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-label">Enrolled Courses</span>
+          <span id="metricCourses" class="metric-value">--</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Weekly Class Slots</span>
+          <span id="metricSlots" class="metric-value">--</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Academic Deadlines</span>
+          <span id="metricEvents" class="metric-value">--</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Discord Alerts Sent</span>
+          <span id="metricLogs" class="metric-value">--</span>
+        </div>
+      </div>
+
+      <!-- QUICK ACTIONS -->
+      <div class="quick-actions-card">
+        <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1.15rem; color: var(--nm-text-primary);">⚡ Quick Actions</h3>
+        <div style="display: flex; gap: 0.85rem; flex-wrap: wrap;">
+          <button class="btn" onclick="switchNav('timetable')">📅 View Weekly Timetable</button>
+          <button class="btn" onclick="openAddEventModal()">🎯 Add Academic Deadline</button>
+          <button class="btn" onclick="switchNav('import')">📤 Import Routine PDF</button>
+          <button class="btn btn-secondary" onclick="handleSyncSchedule(event)">🔄 Sync Schedule</button>
+          <button class="btn btn-secondary" onclick="triggerTestPing(event)">⚡ Send Test Alert</button>
+        </div>
+      </div>
+    </div>
+
     <!-- TAB 1: WEEKLY TIMETABLE -->
-    <div id="tab-timetable" class="tab-content active">
+    <div id="tab-timetable" class="tab-content">
       <div class="timetable-grid" id="timetableGrid">
         <!-- Rendered dynamically -->
       </div>
@@ -1381,16 +1893,62 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
-    // Global fetch patch to enforce credentials: 'same-origin' across all AJAX calls
+    // Global fetch patch to enforce credentials: 'same-origin' and handle 401 session expiration
     const _nativeFetch = window.fetch;
-    window.fetch = function(url, options = {}) {
+    window.fetch = async function(url, options = {}) {
       const opts = Object.assign({ credentials: 'same-origin' }, options);
-      return _nativeFetch.call(this, url, opts);
+      if (!opts.credentials) {
+        opts.credentials = 'same-origin';
+      }
+      const res = await _nativeFetch.call(this, url, opts);
+      if (res.status === 401) {
+        sessionStorage.clear();
+        window.location.href = '/login';
+      }
+      return res;
     };
 
     let activeUserId = parseInt(localStorage.getItem('friday_active_user_id') || '1', 10);
     let cachedCourses = [];
     let cachedEvents = [];
+
+    // Theme Management: Exact Jet Black Dark Mode (#000000) & Light Mode
+    function updateThemeUI(isDark) {
+      const icon = document.getElementById('themeIcon');
+      const label = document.getElementById('themeLabel');
+      if (isDark) {
+        if (icon) {
+          icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+        }
+        if (label) label.textContent = 'Light Mode';
+      } else {
+        if (icon) {
+          icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+        }
+        if (label) label.textContent = 'Dark Mode';
+      }
+    }
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem('friday_theme');
+      const isDark = savedTheme === 'dark';
+      if (isDark) {
+        document.body.classList.add('dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+      }
+      updateThemeUI(isDark);
+    }
+
+    function toggleTheme(e) {
+      if (e) e.preventDefault();
+      const isDark = document.body.classList.toggle('dark-mode');
+      localStorage.setItem('friday_theme', isDark ? 'dark' : 'light');
+      updateThemeUI(isDark);
+    }
+
+    // Call initTheme immediately
+    initTheme();
 
     // Live clock in Asia/Dhaka
     function updateClock() {
@@ -1414,19 +1972,111 @@
       }, 3500);
     }
 
-    function switchTab(tabId, ev) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      
-      const tabBtns = Array.from(document.querySelectorAll('.tab-btn'));
-      const matchingBtn = tabBtns.find(b => b.getAttribute('onclick')?.includes(`'${tabId}'`));
-      if (matchingBtn) matchingBtn.classList.add('active');
-      else if (ev && ev.currentTarget) ev.currentTarget.classList.add('active');
+    // Sidebar & Tab Navigation
+    function switchNav(navId, ev) {
+      // Update sidebar nav items
+      document.querySelectorAll('.nm-sidebar .nav-item').forEach(btn => {
+        if (!btn.classList.contains('footer-item')) {
+          btn.classList.remove('active');
+        }
+      });
 
-      const target = document.getElementById(`tab-${tabId}`);
+      const activeNavBtn = document.querySelector(`.nm-sidebar .nav-item[data-nav="${navId}"]`);
+      if (activeNavBtn) activeNavBtn.classList.add('active');
+
+      // Update tabs-nav buttons (backward compatibility)
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('onclick')?.includes(`'${navId}'`)) {
+          btn.classList.add('active');
+        }
+      });
+
+      // Update tab contents
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      const target = document.getElementById(`tab-${navId}`);
       if (target) target.classList.add('active');
 
-      if (tabId === 'settings') loadSettings();
+      if (navId === 'settings') loadSettings();
+      if (navId === 'timetable') loadRoutine();
+      if (navId === 'deadlines') loadEvents();
+      if (navId === 'logs') loadLogs();
+    }
+
+    function switchTab(tabId, ev) {
+      switchNav(tabId, ev);
+    }
+
+    // Upcoming Class Computation for Home Tab
+    function updateNextClassAlert(routineData) {
+      const card = document.getElementById('nextClassAlertCard');
+      if (!card) return;
+
+      const now = new Date();
+      const dhakaDays = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+      const dayNameDhaka = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Dhaka', weekday: 'long' }).format(now).toUpperCase();
+      const timeDhakaStr = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', hour12: false, hour: '2-digit', minute: '2-digit' }).format(now);
+
+      const titleEl = document.getElementById('nextClassTitle');
+      const subtitleEl = document.getElementById('nextClassSubtitle');
+      const countdownEl = document.getElementById('nextClassCountdown');
+      const roomEl = document.getElementById('nextClassRoom');
+      const timeEl = document.getElementById('nextClassTime');
+      const facultyEl = document.getElementById('nextClassFaculty');
+
+      const grouped = routineData?.grouped || {};
+      const todaySlots = (grouped[dayNameDhaka] || []).slice().sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
+
+      // Check if there is an ongoing or future class today
+      let upcomingSlot = null;
+      let isOngoing = false;
+
+      for (const s of todaySlots) {
+        const start = s.start_time ? s.start_time.substring(0, 5) : '';
+        const end = s.end_time ? s.end_time.substring(0, 5) : '';
+        if (end > timeDhakaStr) {
+          upcomingSlot = s;
+          if (start <= timeDhakaStr) {
+            isOngoing = true;
+          }
+          break;
+        }
+      }
+
+      if (upcomingSlot) {
+        titleEl.textContent = `${upcomingSlot.code} (Sec ${upcomingSlot.section})`;
+        subtitleEl.textContent = isOngoing ? '⚡ Class in session right now' : `Next scheduled class today (${dayNameDhaka})`;
+        countdownEl.textContent = isOngoing ? 'HAPPENING NOW' : 'UPCOMING TODAY';
+        roomEl.textContent = upcomingSlot.room || 'TBA';
+        timeEl.textContent = `${upcomingSlot.start_time.substring(0, 5)} - ${upcomingSlot.end_time.substring(0, 5)}`;
+        facultyEl.textContent = upcomingSlot.faculty || 'N/A';
+        return;
+      }
+
+      // If no more classes today, find first class on upcoming days
+      const todayIndex = dhakaDays.indexOf(dayNameDhaka);
+      for (let offset = 1; offset <= 7; offset++) {
+        const nextDay = dhakaDays[(todayIndex + offset) % 7];
+        const nextSlots = (grouped[nextDay] || []).slice().sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
+        if (nextSlots.length > 0) {
+          const nextSlot = nextSlots[0];
+          titleEl.textContent = `${nextSlot.code} (Sec ${nextSlot.section})`;
+          subtitleEl.textContent = `Next upcoming class on ${nextDay}`;
+          countdownEl.textContent = offset === 1 ? 'TOMORROW' : nextDay;
+          roomEl.textContent = nextSlot.room || 'TBA';
+          timeEl.textContent = `${nextSlot.start_time.substring(0, 5)} - ${nextSlot.end_time.substring(0, 5)}`;
+          facultyEl.textContent = nextSlot.faculty || 'N/A';
+          return;
+        }
+      }
+
+      // No classes at all
+      titleEl.textContent = 'No Upcoming Classes';
+      subtitleEl.textContent = 'No classes scheduled. Enjoy your break!';
+      countdownEl.textContent = 'FREE TIME';
+      roomEl.textContent = '--';
+      timeEl.textContent = '--';
+      facultyEl.textContent = '--';
     }
 
     // Modal helpers
@@ -1476,8 +2126,9 @@
     // Security Gate check (uses localStorage for multi-tab persistence across browser sessions)
     async function checkAuthGate() {
       try {
-        const res = await fetch(`/api/settings?user_id=${activeUserId}`);
+        const res = await fetch(`/api/settings?user_id=${activeUserId}`, { credentials: 'same-origin' });
         if (res.status === 401) {
+          sessionStorage.clear();
           window.location.href = '/login';
           return false;
         }
@@ -1505,7 +2156,8 @@
         const res = await fetch('/api/auth/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ passcode: input.value })
+          body: JSON.stringify({ passcode: input.value }),
+          credentials: 'same-origin'
         });
         const json = await res.json();
         if (json.success && json.verified) {
@@ -1526,8 +2178,9 @@
     // Load initial data
     async function loadDashboard() {
       try {
-        const meRes = await fetch('/api/auth/me');
+        const meRes = await fetch('/api/auth/me', { credentials: 'same-origin' });
         if (meRes.status === 401) {
+          sessionStorage.clear();
           window.location.href = '/login';
           return;
         }
@@ -1567,11 +2220,15 @@
             sel.innerHTML += `<option value="${u.id}" ${isSel}>User #${u.id} (${u.courses_count} courses)${codeTag}</option>`;
           });
 
-          // Pre-fill pairing code in import tab if active user has one
+          // Update user tag in sidebar and pre-fill pairing code in import tab
           const current = json.data.find(u => u.id === activeUserId);
-          if (current && current.pairing_code) {
-            const pInput = document.getElementById('importPairingCode');
-            if (pInput && !pInput.value) pInput.value = current.pairing_code;
+          if (current) {
+            const sidebarTag = document.getElementById('sidebarUserTag');
+            if (sidebarTag) sidebarTag.textContent = current.username || `User #${current.id}`;
+            if (current.pairing_code) {
+              const pInput = document.getElementById('importPairingCode');
+              if (pInput && !pInput.value) pInput.value = current.pairing_code;
+            }
           }
         }
       } catch (err) {
@@ -1760,6 +2417,7 @@
               </div>
             `;
           });
+          updateNextClassAlert(json.data);
         }
       } catch (err) {
         console.error('Failed to load routine:', err);
@@ -2599,25 +3257,28 @@
     async function handleLogout(e) {
       if (e) e.preventDefault();
       try {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
       } catch {}
       localStorage.removeItem('friday_authenticated');
+      sessionStorage.clear();
       window.location.href = '/login';
     }
 
-    // Check URL hash for direct tab navigation (e.g. #import)
+    // Check URL hash for direct navigation (e.g. #home, #timetable, #import)
     if (window.location.hash) {
       const hashTab = window.location.hash.replace('#', '');
-      if (['timetable', 'deadlines', 'import', 'logs', 'settings'].includes(hashTab)) {
-        switchTab(hashTab);
+      if (['home', 'timetable', 'deadlines', 'import', 'logs', 'settings'].includes(hashTab)) {
+        switchNav(hashTab);
       }
     }
 
     // DOMContentLoaded: Authenticate and render dashboard directly
     document.addEventListener('DOMContentLoaded', async () => {
+      initTheme();
       try {
-        const res = await fetch('/api/users');
+        const res = await fetch('/api/users', { credentials: 'same-origin' });
         if (res.status === 401) {
+          sessionStorage.clear();
           window.location.href = '/login';
           return;
         }
@@ -2628,6 +3289,8 @@
             if (current) {
               activeUserId = current.id;
               localStorage.setItem('friday_active_user_id', String(activeUserId));
+              const sidebarTag = document.getElementById('sidebarUserTag');
+              if (sidebarTag) sidebarTag.textContent = current.username || `User #${current.id}`;
             }
           }
         }

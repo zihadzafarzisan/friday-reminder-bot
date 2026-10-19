@@ -162,7 +162,8 @@ export function getSessionUser(req, db) {
  */
 export function createSession(userId, res, db) {
   const token = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const SESSION_INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15-minute rolling inactivity session (15 * 60 * 1000 ms, previously 30 * 24 * 60 * 60 * 1000)
+  const expiresAt = new Date(Date.now() + SESSION_INACTIVITY_TIMEOUT).toISOString();
 
   // Clean up any expired sessions for this user
   try {
@@ -188,7 +189,7 @@ export function createSession(userId, res, db) {
     httpOnly: true,
     signed: true,
     sameSite: 'lax',
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    maxAge: 15 * 60 * 1000,
     path: '/'
   });
 
@@ -279,7 +280,7 @@ export function requireAuth(req, res, next) {
         req.userId = getRequestUserId(req, db);
         return next();
       }
-      return res.status(401).json({ success: false, error: 'Unauthorized' });
+      return res.status(401).json({ success: false, error: 'Session expired' });
     }
 
     if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-auth']) {
@@ -305,7 +306,7 @@ export function requireAuth(req, res, next) {
         req.userId = getRequestUserId(req, db);
         return next();
       }
-      return res.status(401).json({ success: false, error: 'Unauthorized' });
+      return res.status(401).json({ success: false, error: 'Session expired' });
     }
 
     if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-auth']) {
@@ -318,6 +319,22 @@ export function requireAuth(req, res, next) {
 
   req.authenticatedUser = user;
   req.userId = user.id;
+
+  // Sliding Session Renewal: re-issue friday_session cookie with a refreshed 15-minute maxAge
+  res.cookie('friday_session', String(user.id), {
+    httpOnly: true,
+    signed: true,
+    sameSite: 'lax',
+    maxAge: 15 * 60 * 1000,
+    path: '/'
+  });
+
+  // Slide database session expiration forward
+  try {
+    const refreshedExpires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    db.prepare('UPDATE sessions SET expires_at = ? WHERE user_id = ?').run(refreshedExpires, user.id);
+  } catch {}
+
   next();
 }
 
@@ -347,7 +364,7 @@ export function createServer() {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-  const SESSION_SECRET = process.env.SESSION_SECRET || 'friday-persistent-session-secret-salt-2026';
+  const SESSION_SECRET = process.env.SESSION_SECRET || 'friday-inactivity-session-key-2026'; // friday-persistent-session-secret-salt-2026
   app.use(cookieParser(SESSION_SECRET));
 
   // Attach session user to req if present
@@ -373,9 +390,18 @@ export function createServer() {
 
   // GET / - Dashboard home, requires authentication
   app.get('/', (req, res) => {
-    if (!req.authenticatedUser) {
+    const user = req.authenticatedUser || getSessionUser(req, db);
+    if (!user) {
       return res.redirect('/login');
     }
+    // Slide expiration forward on dashboard access
+    res.cookie('friday_session', String(user.id), {
+      httpOnly: true,
+      signed: true,
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000,
+      path: '/'
+    });
     res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
   });
 

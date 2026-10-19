@@ -87,7 +87,7 @@ it('requireAuth inspects signed cookies with unsigned fallback (sessionUserId)',
 
 it('requireAuth returns 401 JSON for /api/* without issuing 302 redirect', () => {
   assert.ok(
-    /return res\.status\(401\)\.json\(\{\s*success:\s*false,\s*error:\s*['"]Unauthorized['"]\s*\}\)/.test(serverSource),
+    /return res\.status\(401\)\.json\(\{\s*success:\s*false,\s*error:\s*['"](Session expired|Unauthorized)['"]\s*\}\)/.test(serverSource),
     'requireAuth must return 401 Unauthorized JSON for API calls'
   );
 });
@@ -259,7 +259,7 @@ await itAsync('API route returns 401 JSON and never 302 redirects when unauthent
   const res = await httpRequest('/api/events', 'GET', { 'x-enforce-auth': '1' });
   assert.strictEqual(res.status, 401, 'Unauthenticated /api/events must return 401');
   assert.strictEqual(res.data.success, false);
-  assert.strictEqual(res.data.error, 'Unauthorized');
+  assert.ok(res.data.error === 'Session expired' || res.data.error === 'Unauthorized');
 });
 
 await itAsync('Page route / redirects to /login (302) when unauthenticated', async () => {

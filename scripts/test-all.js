@@ -19,7 +19,8 @@ const testSuites = [
   { name: 'Discord Code Authentication & Tenant Isolation', script: 'scripts/test-auth.js' },
   { name: 'Dynamic Event Type Resolution (Class vs Lab)', script: 'scripts/test-event-type.js' },
   { name: 'Routine PDF Upload & Schedule Parser', script: 'scripts/test-pdf-parser.js' },
-  { name: 'Multi-Tab Session Persistence & Neumorphic UI', script: 'scripts/test-session-persistence.js' }
+  { name: 'Multi-Tab Session Persistence & Neumorphic UI', script: 'scripts/test-session-persistence.js' },
+  { name: '15-Min Rolling Session, Sidebar & Jet Black Dark Mode', script: 'scripts/test-rolling-session-sidebar.js' }
 ];
 
 function runTest(suite) {

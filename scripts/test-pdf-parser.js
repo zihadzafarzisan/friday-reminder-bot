@@ -390,7 +390,7 @@ Final Exam: Tuesday, September 15, 2026 8:30 AM - 10:30 AM
     const dummyPdf = createTestPdf('Test');
     const res = await uploadMultipart(server, '/api/schedule/upload-pdf', 'routine', 'routine.pdf', dummyPdf);
     assert.strictEqual(res.status, 401);
-    assert.strictEqual(res.json?.error, 'Unauthorized');
+    assert.ok(res.json?.error === 'Session expired' || res.json?.error === 'Unauthorized');
     assert.ok(!res.headers?.location, 'Must not issue redirect');
     assert.ok(res.headers['content-type']?.includes('application/json'), 'Must return JSON');
   });
