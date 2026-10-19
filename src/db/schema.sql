@@ -48,11 +48,35 @@ CREATE TABLE IF NOT EXISTS events (
     end_time TEXT NOT NULL,   -- ISO-8601 with Asia/Dhaka (+06:00) offset
     room TEXT,
     is_custom INTEGER DEFAULT 0,
+    event_type TEXT,
+    event_time TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
     UNIQUE(user_id, course_id, type, start_time)
 );
+
+CREATE TRIGGER IF NOT EXISTS trg_events_sync_insert AFTER INSERT ON events
+BEGIN
+  UPDATE events SET
+    event_type = COALESCE(event_type, type),
+    event_time = COALESCE(event_time, start_time),
+    type = COALESCE(type, event_type),
+    start_time = COALESCE(start_time, event_time),
+    end_time = COALESCE(end_time, event_time, start_time)
+  WHERE id = NEW.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_events_sync_update AFTER UPDATE ON events
+BEGIN
+  UPDATE events SET
+    event_type = COALESCE(event_type, type),
+    event_time = COALESCE(event_time, start_time),
+    type = COALESCE(type, event_type),
+    start_time = COALESCE(start_time, event_time),
+    end_time = COALESCE(end_time, event_time, start_time)
+  WHERE id = NEW.id;
+END;
 
 CREATE TABLE IF NOT EXISTS notification_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

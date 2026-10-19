@@ -641,7 +641,7 @@ export function createServer() {
           r.start_time ASC;
       `).all(targetUserId);
 
-      const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY'];
+      const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
       const grouped = {};
       for (const d of days) grouped[d] = [];
 
@@ -653,7 +653,7 @@ export function createServer() {
         grouped[slot.day_of_week].push(slot);
       }
 
-      res.json({ success: true, data: { slots, grouped } });
+      res.json({ success: true, count: slots.length, routine: slots, data: { slots, grouped } });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
@@ -1005,12 +1005,14 @@ export function createServer() {
         `);
 
         const insertEvent = db.prepare(`
-          INSERT INTO events (user_id, course_id, type, title, start_time, end_time, room, is_custom)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+          INSERT INTO events (user_id, course_id, type, title, start_time, end_time, room, is_custom, event_type, event_time)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
           ON CONFLICT(user_id, course_id, type, start_time) DO UPDATE SET
             end_time = excluded.end_time,
             room = excluded.room,
-            title = excluded.title;
+            title = excluded.title,
+            event_type = excluded.event_type,
+            event_time = excluded.event_time;
         `);
 
         db.transaction(() => {
@@ -1026,37 +1028,49 @@ export function createServer() {
             insertSchedule.run(
               targetUserId,
               item.course_code,
-              item.section,
+              item.section || '01',
               item.day_of_week,
               item.start_time,
               item.end_time,
-              item.room,
-              item.event_type
+              item.room || 'TBA',
+              item.event_type || 'CLASS'
             );
           }
 
           // 2. Insert into courses and routine_slots
           const courseIdMap = new Map();
           for (const c of courses) {
-            const row = insertCourse.get(targetUserId, c.code, c.section, c.room || 'TBA', c.code, c.faculty || null);
-            courseIdMap.set(`${c.code}_${c.section}`, row.id);
+            const row = insertCourse.get(targetUserId, c.code, c.section || '01', c.room || 'TBA', c.code, c.faculty || null);
+            courseIdMap.set(`${c.code}_${c.section || '01'}`, row.id);
           }
 
           for (const slot of schedules) {
-            let courseId = courseIdMap.get(`${slot.course_code}_${slot.section}`);
+            let courseId = courseIdMap.get(`${slot.course_code}_${slot.section || '01'}`);
             if (!courseId) {
-              const row = insertCourse.get(targetUserId, slot.course_code, slot.section, slot.room, slot.course_code, null);
+              const row = insertCourse.get(targetUserId, slot.course_code, slot.section || '01', slot.room || 'TBA', slot.course_code, null);
               courseId = row.id;
-              courseIdMap.set(`${slot.course_code}_${slot.section}`, courseId);
+              courseIdMap.set(`${slot.course_code}_${slot.section || '01'}`, courseId);
             }
-            insertRoutineSlot.run(targetUserId, courseId, slot.day_of_week, slot.start_time, slot.end_time, slot.room);
+            insertRoutineSlot.run(targetUserId, courseId, slot.day_of_week, slot.start_time, slot.end_time, slot.room || 'TBA');
           }
 
           // 3. Insert into events (Exams)
           for (const ev of events) {
             const courseRow = db.prepare('SELECT id FROM courses WHERE user_id = ? AND code = ?').get(targetUserId, ev.course_code);
             const courseId = courseRow ? courseRow.id : null;
-            insertEvent.run(targetUserId, courseId, ev.type, ev.title, ev.start_time, ev.end_time, ev.room);
+            const evType = ev.type || ev.kind || ev.event_type;
+            const evTime = ev.start_time || ev.event_time;
+            insertEvent.run(
+              targetUserId,
+              courseId,
+              evType,
+              ev.title,
+              evTime,
+              ev.end_time || evTime,
+              ev.room || 'TBA',
+              ev.event_type || evType,
+              ev.event_time || evTime
+            );
           }
         })();
 

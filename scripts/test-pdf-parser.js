@@ -8,10 +8,14 @@ import {
   parseBracuPdfText, 
   extractPdfText, 
   normalizeTimeTo24h, 
-  parseDateToIsoDhaka 
+  parseDateToIsoDhaka,
+  reconstructFacultyAndRoom,
+  parseExamScheduleText,
+  parseBracuGridElements,
+  customPageRender
 } from '../src/services/routineParser.js';
 import { closeDiscordClient } from '../src/bot.js';
-import { handleImportCommand } from '../src/commands/handlers.js';
+import { handleImportCommand, handleTodayCommand, handleNextCommand } from '../src/commands/handlers.js';
 
 const require = createRequire(import.meta.url);
 
@@ -68,6 +72,101 @@ function createTestPdf(text) {
     (300 + streamLen) + '\n' +
     '%%EOF'
   );
+}
+
+/**
+ * Creates a coordinate-aware PDF with individual (X, Y) text operators
+ */
+function createCoordinateRoutinePdf(items) {
+  let stream = '';
+  for (const it of items) {
+    stream += `BT /F1 10 Tf 1 0 0 1 ${it.x} ${it.y} Tm (${it.str}) Tj ET\n`;
+  }
+  const streamLen = Buffer.byteLength(stream);
+
+  return Buffer.from(
+    '%PDF-1.4\n' +
+    '1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n' +
+    '2 0 obj<</Type/Pages/Count 1/Kids[3 0 R]>>endobj\n' +
+    '3 0 obj<</Type/Page/MediaBox[0 0 1000 800]/Parent 2 0 R/Resources<<>>/Contents 4 0 R>>endobj\n' +
+    '4 0 obj<</Length ' + streamLen + '>>stream\n' +
+    stream + '\n' +
+    'endstream\n' +
+    'endobj\n' +
+    'xref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000052 00000 n \n0000000101 00000 n \n0000000201 00000 n \ntrailer<</Size 5/Root 1 0 R>>\nstartxref\n' +
+    (300 + streamLen) + '\n%%EOF'
+  );
+}
+
+/**
+ * Creates full mock BRACU Connect PDF with 2D schedule grid (8 slots) and exam date table (8 exams)
+ */
+function createSampleBracuRoutinePdf() {
+  const items = [
+    // Day headers
+    { str: 'TIME', x: 80, y: 700 },
+    { str: 'SUNDAY', x: 200, y: 700 },
+    { str: 'MONDAY', x: 300, y: 700 },
+    { str: 'TUESDAY', x: 400, y: 700 },
+    { str: 'WEDNESDAY', x: 500, y: 700 },
+    { str: 'THURSDAY', x: 600, y: 700 },
+    { str: 'FRIDAY', x: 700, y: 700 },
+    { str: 'SATURDAY', x: 800, y: 700 },
+
+    // Time row headers
+    { str: '08:00 AM - 09:20 AM', x: 80, y: 640 },
+    { str: '09:30 AM - 10:50 AM', x: 80, y: 580 },
+    { str: '11:00 AM - 12:20 PM', x: 80, y: 520 },
+    { str: '02:00 PM - 05:00 PM', x: 80, y: 460 },
+    { str: '08:00 AM - 11:00 AM', x: 80, y: 400 },
+    { str: '11:00 AM - 02:00 PM', x: 80, y: 340 },
+
+    // 1. CSE260-05 (Sunday 08:00 - 09:20, Room 10B-16C)
+    { str: 'CSE260-05', x: 200, y: 640 },
+    { str: 'PBK-10B-16C', x: 200, y: 628 },
+
+    // 2. CSE260-05 (Tuesday 08:00 - 09:20, Room 10B-16C)
+    { str: 'CSE260-05', x: 400, y: 640 },
+    { str: 'PBK-10B-16C', x: 400, y: 628 },
+
+    // 3. CSE220-09 (Sunday 11:00 - 12:20, Room 09A-06C)
+    { str: 'CSE220-09', x: 200, y: 520 },
+    { str: 'SWG-09A-06C', x: 200, y: 508 },
+
+    // 4. CSE220-09 (Tuesday 11:00 - 12:20, Room 09A-06C)
+    { str: 'CSE220-09', x: 400, y: 520 },
+    { str: 'SWG-09A-06C', x: 400, y: 508 },
+
+    // 5. MAT215-13 (Monday 09:30 - 10:50, split room "12A" and "11C")
+    { str: 'MAT215-13', x: 300, y: 580 },
+    { str: 'SAN-12A', x: 300, y: 568 },
+    { str: '11C', x: 300, y: 556 },
+
+    // 6. CSE260L-05 (Saturday 08:00 - 11:00, Lab AS1-13L)
+    { str: 'CSE260L-05', x: 800, y: 400 },
+    { str: 'TBA-AS1-13L', x: 800, y: 388 },
+
+    // 7. CSE220L-09 (Monday 11:00 - 02:00, Lab 09B-09L)
+    { str: 'CSE220L-09', x: 300, y: 340 },
+    { str: 'TBA-09B-09L', x: 300, y: 328 },
+
+    // 8. CSE330L-11 (Thursday 02:00 - 05:00, Lab 12F-30L)
+    { str: 'CSE330L-11', x: 600, y: 460 },
+    { str: 'TBA-12F-30L', x: 600, y: 448 },
+
+    // Exam section
+    { str: 'DAY TIME EXAM COURSE', x: 80, y: 280 },
+    { str: 'Saturday (2026-11-21) 02:00 PM - 04:00 PM MID CSE260', x: 80, y: 250 },
+    { str: 'Sunday (2026-11-22) 11:00 AM - 01:00 PM MID CSE220', x: 80, y: 235 },
+    { str: 'Monday (2026-11-23) 08:30 AM - 10:30 AM MID MAT215', x: 80, y: 220 },
+    { str: 'Wednesday (2026-11-25) 11:00 AM - 01:00 PM MID CSE330', x: 80, y: 205 },
+    { str: 'Saturday (2027-01-23) 02:00 PM - 04:00 PM FINAL CSE260', x: 80, y: 190 },
+    { str: 'Sunday (2027-01-24) 11:00 AM - 01:00 PM FINAL CSE220', x: 80, y: 175 },
+    { str: 'Monday (2027-01-25) 08:30 AM - 10:30 AM FINAL MAT215', x: 80, y: 160 },
+    { str: 'Wednesday (2027-01-27) 11:00 AM - 01:00 PM FINAL CSE330', x: 80, y: 145 }
+  ];
+
+  return createCoordinateRoutinePdf(items);
 }
 
 /**
@@ -460,6 +559,183 @@ Final Exam: 2026-09-16 11:00 - 13:00
     assert.ok(mockUnsupportedInter._reply);
     assert.strictEqual(mockUnsupportedInter._reply.ephemeral, true);
     assert.ok(mockUnsupportedInter._reply.content.includes('Invalid JSON'));
+  });
+
+  const mockGridInter = {
+    user: { id: '1328051283080380559', tag: 'Student1' },
+    options: {
+      getAttachment: () => ({
+        name: 'student_routine.pdf',
+        contentType: 'application/pdf',
+        content: createSampleBracuRoutinePdf()
+      })
+    },
+    reply: function(payload) {
+      this._reply = payload;
+      return Promise.resolve(payload);
+    }
+  };
+
+  await itAsync('handleImportCommand imports 2D grid timetable and exam dates via Discord command', async () => {
+    await handleImportCommand(mockGridInter, db);
+    assert.ok(mockGridInter._reply);
+    assert.strictEqual(mockGridInter._reply.ephemeral, true);
+    assert.ok(mockGridInter._reply.embeds && mockGridInter._reply.embeds.length > 0);
+    const embed = mockGridInter._reply.embeds[0].data;
+    assert.ok(embed.title.includes('Routine Imported Successfully'));
+    assert.ok(embed.description.includes('8'));
+  });
+
+  console.log('\n--- TEST GROUP 8: 2D Timetable Grid Parser (Coordinate-Aware) ---');
+  it('reconstructFacultyAndRoom joins broken room segments "12A" and "11C" into "12A-11C"', () => {
+    const res = reconstructFacultyAndRoom(['SAN-12A', '11C']);
+    assert.strictEqual(res.faculty, 'SAN');
+    assert.strictEqual(res.room, '12A-11C');
+  });
+
+  it('reconstructFacultyAndRoom handles standard and lab faculty-room strings', () => {
+    const res1 = reconstructFacultyAndRoom(['PBK-10B-16C']);
+    assert.strictEqual(res1.faculty, 'PBK');
+    assert.strictEqual(res1.room, '10B-16C');
+
+    const res2 = reconstructFacultyAndRoom(['TBA-AS1-13L']);
+    assert.strictEqual(res2.faculty, 'TBA');
+    assert.strictEqual(res2.room, 'AS1-13L');
+  });
+
+  await itAsync('parseBracuPdf extracts 8 weekly class/lab slots from 2D coordinate grid', async () => {
+    const pdfBuf = createSampleBracuRoutinePdf();
+    const result = await parseBracuPdf(pdfBuf);
+    assert.strictEqual(result.schedules.length, 8, `Expected 8 class slots, got ${result.schedules.length}`);
+
+    // Verify theory courses
+    const cse260Slots = result.schedules.filter(s => s.course_code === 'CSE260');
+    assert.strictEqual(cse260Slots.length, 2);
+    assert.ok(cse260Slots.some(s => s.day_of_week === 'SUNDAY' && s.start_time === '08:00' && s.room === '10B-16C'));
+    assert.ok(cse260Slots.some(s => s.day_of_week === 'TUESDAY' && s.start_time === '08:00' && s.room === '10B-16C'));
+
+    const cse220Slots = result.schedules.filter(s => s.course_code === 'CSE220');
+    assert.strictEqual(cse220Slots.length, 2);
+    assert.ok(cse220Slots.some(s => s.day_of_week === 'SUNDAY' && s.start_time === '11:00' && s.room === '09A-06C'));
+    assert.ok(cse220Slots.some(s => s.day_of_week === 'TUESDAY' && s.start_time === '11:00' && s.room === '09A-06C'));
+
+    const mat215Slot = result.schedules.find(s => s.course_code === 'MAT215');
+    assert.ok(mat215Slot);
+    assert.strictEqual(mat215Slot.day_of_week, 'MONDAY');
+    assert.strictEqual(mat215Slot.start_time, '09:30');
+    assert.strictEqual(mat215Slot.end_time, '10:50');
+    assert.strictEqual(mat215Slot.room, '12A-11C');
+    assert.strictEqual(mat215Slot.event_type, 'CLASS');
+
+    // Verify 3 labs
+    const cse260l = result.schedules.find(s => s.course_code === 'CSE260L');
+    assert.ok(cse260l);
+    assert.strictEqual(cse260l.day_of_week, 'SATURDAY');
+    assert.strictEqual(cse260l.event_type, 'LAB');
+    assert.strictEqual(cse260l.room, 'AS1-13L');
+
+    const cse220l = result.schedules.find(s => s.course_code === 'CSE220L');
+    assert.ok(cse220l);
+    assert.strictEqual(cse220l.day_of_week, 'MONDAY');
+    assert.strictEqual(cse220l.event_type, 'LAB');
+    assert.strictEqual(cse220l.room, '09B-09L');
+
+    const cse330l = result.schedules.find(s => s.course_code === 'CSE330L');
+    assert.ok(cse330l);
+    assert.strictEqual(cse330l.day_of_week, 'THURSDAY');
+    assert.strictEqual(cse330l.event_type, 'LAB');
+    assert.strictEqual(cse330l.room, '12F-30L');
+  });
+
+  console.log('\n--- TEST GROUP 9: Exam Schedule Parser (DAY TIME EXAM COURSE) ---');
+  await itAsync('parseBracuPdf extracts 8 exam dates (4 midterms, 4 finals) adjusted for Asia/Dhaka (+06:00)', async () => {
+    const pdfBuf = createSampleBracuRoutinePdf();
+    const result = await parseBracuPdf(pdfBuf);
+    assert.strictEqual(result.events.length, 8, `Expected 8 exam events, got ${result.events.length}`);
+
+    const midterms = result.events.filter(e => e.type === 'MIDTERM');
+    const finals = result.events.filter(e => e.type === 'FINAL');
+    assert.strictEqual(midterms.length, 4);
+    assert.strictEqual(finals.length, 4);
+
+    const cse260Mid = midterms.find(e => e.course_code === 'CSE260');
+    assert.ok(cse260Mid);
+    assert.strictEqual(cse260Mid.start_time, '2026-11-21T14:00:00+06:00');
+    assert.strictEqual(cse260Mid.end_time, '2026-11-21T16:00:00+06:00');
+    assert.strictEqual(cse260Mid.kind, 'MIDTERM');
+
+    const cse220Final = finals.find(e => e.course_code === 'CSE220');
+    assert.ok(cse220Final);
+    assert.strictEqual(cse220Final.start_time, '2027-01-24T11:00:00+06:00');
+    assert.strictEqual(cse220Final.end_time, '2027-01-24T13:00:00+06:00');
+    assert.strictEqual(cse220Final.kind, 'FINAL');
+  });
+
+  console.log('\n--- TEST GROUP 10: Full Upload Verification (Web POST & Persistence) ---');
+  await itAsync('POST /api/schedule/upload-pdf imports 8 class slots and 8 exam dates into isolated database', async () => {
+    const pdfBuf = createSampleBracuRoutinePdf();
+    const res = await uploadMultipart(server, '/api/schedule/upload-pdf', 'routine', 'bracu_connect_routine.pdf', pdfBuf, cookieHeader1);
+
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.json?.success, true);
+    assert.strictEqual(res.json?.schedules_count, 8);
+    assert.strictEqual(res.json?.events_count, 8);
+
+    // Verify class_schedules table has exactly 8 rows for user 1
+    const schedules = db.prepare('SELECT * FROM class_schedules WHERE user_id = 1 ORDER BY id ASC').all();
+    assert.strictEqual(schedules.length, 8);
+    const labs = schedules.filter(s => s.event_type === 'LAB');
+    assert.strictEqual(labs.length, 3);
+    const classes = schedules.filter(s => s.event_type === 'CLASS');
+    assert.strictEqual(classes.length, 5);
+
+    // Verify events table has exactly 8 rows for user 1 with event_type and event_time populated
+    const userEvents = db.prepare('SELECT * FROM events WHERE user_id = 1 AND is_custom = 0 ORDER BY start_time ASC').all();
+    assert.strictEqual(userEvents.length, 8);
+    for (const ev of userEvents) {
+      assert.ok(ev.event_type === 'MIDTERM' || ev.event_type === 'FINAL');
+      assert.ok(ev.event_time.includes('+06:00'));
+      assert.strictEqual(ev.event_time, ev.start_time);
+    }
+  });
+
+  console.log('\n--- TEST GROUP 11: Dashboard Routine View & Discord Commands ---');
+  await itAsync('GET /api/schedule and GET /api/routine immediately return the 8 imported routine slots', async () => {
+    const schedRes = await request(server, '/api/schedule', 'GET', null, cookieHeader1);
+    assert.strictEqual(schedRes.status, 200);
+    assert.strictEqual(schedRes.json?.count, 8);
+
+    const routineRes = await request(server, '/api/routine', 'GET', null, cookieHeader1);
+    assert.strictEqual(routineRes.status, 200);
+    assert.strictEqual(routineRes.json?.count, 8);
+    const slots = routineRes.json?.routine;
+    assert.ok(slots.some(s => s.code === 'MAT215' && s.room === '12A-11C'));
+  });
+
+  await itAsync('Discord /today and /next immediately display imported courses with correct days and rooms', async () => {
+    const mockTodayInter = {
+      user: { id: '1328051283080380559', username: 'Student1' },
+      isChatInputCommand: () => true,
+      reply: function(payload) {
+        this._reply = payload;
+        return Promise.resolve(payload);
+      }
+    };
+    await handleTodayCommand(mockTodayInter, db);
+    assert.ok(mockTodayInter._reply);
+    assert.ok(mockTodayInter._reply.embeds && mockTodayInter._reply.embeds.length > 0);
+
+    const mockNextInter = {
+      user: { id: '1328051283080380559', username: 'Student1' },
+      isChatInputCommand: () => true,
+      reply: function(payload) {
+        this._reply = payload;
+        return Promise.resolve(payload);
+      }
+    };
+    await handleNextCommand(mockNextInter, db);
+    assert.ok(mockNextInter._reply);
+    assert.ok(mockNextInter._reply.embeds && mockNextInter._reply.embeds.length > 0);
   });
 
   await closeDiscordClient();

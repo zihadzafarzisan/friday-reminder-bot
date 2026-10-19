@@ -1343,12 +1343,14 @@ export async function handleImportCommand(interaction, db = getDb()) {
       `);
 
       const insertEvent = db.prepare(`
-        INSERT INTO events (user_id, course_id, type, title, start_time, end_time, room, is_custom)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+        INSERT INTO events (user_id, course_id, type, title, start_time, end_time, room, is_custom, event_type, event_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
         ON CONFLICT(user_id, course_id, type, start_time) DO UPDATE SET
           end_time = excluded.end_time,
           room = excluded.room,
-          title = excluded.title;
+          title = excluded.title,
+          event_type = excluded.event_type,
+          event_time = excluded.event_time;
       `);
 
       db.transaction(() => {
@@ -1362,35 +1364,47 @@ export async function handleImportCommand(interaction, db = getDb()) {
           insertSchedule.run(
             tenantUserId,
             s.course_code,
-            s.section || 1,
+            s.section || '01',
             s.day_of_week,
             s.start_time,
             s.end_time,
-            s.room,
+            s.room || 'TBA',
             s.event_type || 'CLASS'
           );
         }
 
         const courseIdMap = new Map();
         for (const c of (courses || [])) {
-          const row = insertCourse.get(tenantUserId, c.code, c.section, c.room || 'TBA', c.code, c.faculty || null);
-          courseIdMap.set(`${c.code}_${c.section}`, row.id);
+          const row = insertCourse.get(tenantUserId, c.code, c.section || '01', c.room || 'TBA', c.code, c.faculty || null);
+          courseIdMap.set(`${c.code}_${c.section || '01'}`, row.id);
         }
 
         for (const slot of schedules) {
-          let courseId = courseIdMap.get(`${slot.course_code}_${slot.section}`);
+          let courseId = courseIdMap.get(`${slot.course_code}_${slot.section || '01'}`);
           if (!courseId) {
-            const row = insertCourse.get(tenantUserId, slot.course_code, slot.section, slot.room, slot.course_code, null);
+            const row = insertCourse.get(tenantUserId, slot.course_code, slot.section || '01', slot.room || 'TBA', slot.course_code, null);
             courseId = row.id;
-            courseIdMap.set(`${slot.course_code}_${slot.section}`, courseId);
+            courseIdMap.set(`${slot.course_code}_${slot.section || '01'}`, courseId);
           }
-          insertRoutineSlot.run(tenantUserId, courseId, slot.day_of_week, slot.start_time, slot.end_time, slot.room);
+          insertRoutineSlot.run(tenantUserId, courseId, slot.day_of_week, slot.start_time, slot.end_time, slot.room || 'TBA');
         }
 
         for (const ev of (events || [])) {
           const courseRow = db.prepare('SELECT id FROM courses WHERE user_id = ? AND code = ?').get(tenantUserId, ev.course_code);
           const courseId = courseRow ? courseRow.id : null;
-          insertEvent.run(tenantUserId, courseId, ev.type, ev.title, ev.start_time, ev.end_time, ev.room);
+          const evType = ev.type || ev.kind || ev.event_type;
+          const evTime = ev.start_time || ev.event_time;
+          insertEvent.run(
+            tenantUserId,
+            courseId,
+            evType,
+            ev.title,
+            evTime,
+            ev.end_time || evTime,
+            ev.room || 'TBA',
+            ev.event_type || evType,
+            ev.event_time || evTime
+          );
         }
       })();
 

@@ -363,6 +363,20 @@ export function runMigration(db = getDb()) {
     CREATE INDEX IF NOT EXISTS idx_class_schedules_day ON class_schedules(user_id, day_of_week);
   `);
 
+  // 9h. Ensure event_type and event_time columns exist on events table
+  if (hasTable(db, 'events')) {
+    if (!hasColumn(db, 'events', 'event_type')) {
+      db.exec('ALTER TABLE events ADD COLUMN event_type TEXT;');
+      db.exec('UPDATE events SET event_type = type WHERE event_type IS NULL;');
+      console.log('[+] Added event_type column to events table.');
+    }
+    if (!hasColumn(db, 'events', 'event_time')) {
+      db.exec('ALTER TABLE events ADD COLUMN event_time TEXT;');
+      db.exec('UPDATE events SET event_time = start_time WHERE event_time IS NULL;');
+      console.log('[+] Added event_time column to events table.');
+    }
+  }
+
   // 10. Re-enable foreign keys
   db.exec('PRAGMA foreign_keys = ON;');
   console.log('[+] Phase 5 migration completed successfully.');
