@@ -182,32 +182,6 @@
       flex-wrap: wrap;
     }
 
-    .user-select-wrap {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: var(--nm-surface);
-      box-shadow: var(--nm-inset-sm);
-      padding: 0.35rem 0.75rem;
-      border-radius: 9999px;
-    }
-
-    .user-select {
-      background: transparent;
-      color: var(--nm-text);
-      border: none;
-      font-family: inherit;
-      font-size: 0.85rem;
-      font-weight: 600;
-      outline: none;
-      cursor: pointer;
-    }
-
-    .user-select option {
-      background: var(--nm-surface);
-      color: var(--nm-text);
-    }
-
     .live-clock {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.82rem;
@@ -802,11 +776,6 @@
 
     body.dark-mode .slot-card-lab {
       border-left: 5px solid var(--nm-accent-amber);
-    }
-
-    body.dark-mode .user-select option {
-      background: #0a0a0c;
-      color: #f8fafc;
     }
 
     body.dark-mode .event-card {
@@ -1688,10 +1657,6 @@
         gap: 0.6rem;
       }
 
-      .user-select-wrap {
-        max-width: 130px;
-      }
-
       .last-sync-badge {
         display: none;
       }
@@ -1849,18 +1814,7 @@
           <span style="font-size:0.8rem; font-weight:700;">Menu</span>
         </button>
 
-        <!-- Multi-Tenant Student Switcher -->
-        <div class="user-select-wrap" title="Switch active student profile">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;color:var(--nm-text-secondary);flex-shrink:0;">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-          <select id="userProfileSelector" class="user-select" onchange="handleUserSwitch(this.value)">
-            <option value="1">Student #1</option>
-          </select>
-        </div>
-
-        <div id="lastSyncBadge" class="last-sync-badge">
+<div id="lastSyncBadge" class="last-sync-badge">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;color:var(--nm-accent-blue);flex-shrink:0;">
             <polyline points="23 4 23 10 17 10"></polyline>
             <polyline points="1 20 1 14 7 14"></polyline>
@@ -2690,7 +2644,6 @@
       if (!authorized) return;
 
       await Promise.all([
-        loadUsers(),
         loadStatus(),
         loadCourses(),
         loadRoutine(),
@@ -2698,42 +2651,6 @@
         loadLogs(),
         loadSettings()
       ]);
-    }
-
-    async function loadUsers() {
-      try {
-        const res = await fetch('/api/users');
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          const sel = document.getElementById('userProfileSelector');
-          sel.innerHTML = '';
-          json.data.forEach(u => {
-            const isSel = u.id === activeUserId ? 'selected' : '';
-            const codeTag = u.pairing_code ? ` [${u.pairing_code}]` : '';
-            sel.innerHTML += `<option value="${u.id}" ${isSel}>User #${u.id} (${u.courses_count} courses)${codeTag}</option>`;
-          });
-
-          // Update user tag in sidebar and pre-fill pairing code in import tab
-          const current = json.data.find(u => u.id === activeUserId);
-          if (current) {
-            const sidebarTag = document.getElementById('sidebarUserTag');
-            if (sidebarTag) sidebarTag.textContent = current.username || `User #${current.id}`;
-            if (current.pairing_code) {
-              const pInput = document.getElementById('importPairingCode');
-              if (pInput && !pInput.value) pInput.value = current.pairing_code;
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load users:', err);
-      }
-    }
-
-    function handleUserSwitch(newId) {
-      activeUserId = parseInt(newId, 10);
-      localStorage.setItem('friday_active_user_id', String(activeUserId));
-      showToast(`Switched active profile to User #${activeUserId}`);
-      loadDashboard();
     }
 
     function formatSyncTime(isoStr) {
