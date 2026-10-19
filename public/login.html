@@ -442,10 +442,9 @@
     const alertIcon = document.getElementById('alertIcon');
     const alertText = document.getElementById('alertText');
 
-    // Auto-check if already logged in
     (async function checkExistingSession() {
       try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated) {
@@ -511,7 +510,8 @@
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code })
+          body: JSON.stringify({ code }),
+          credentials: 'same-origin'
         });
 
         const data = await res.json();

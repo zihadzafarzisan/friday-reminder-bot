@@ -6,22 +6,33 @@
   <title>FRIDAY — Academic Control Panel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0b0f19;
-      --card-bg: #111827;
-      --card-border: #1f2937;
-      --text: #f9fafb;
-      --text-muted: #9ca3af;
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
-      --accent: #06b6d4;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-      --font-mono: 'JetBrains Mono', monospace;
+      --nm-bg: #e0e5ec;
+      --nm-surface: #e0e5ec;
+      --nm-text: #2d3748;
+      --nm-text-muted: #718096;
+      --nm-border-light: rgba(255, 255, 255, 0.6);
+
+      /* Extrusion Shadows */
+      --nm-extruded-lg: 12px 12px 24px #bec8d4, -12px -12px 24px #ffffff;
+      --nm-extruded: 7px 7px 15px #bec8d4, -7px -7px 15px #ffffff;
+      --nm-extruded-sm: 4px 4px 8px #bec8d4, -4px -4px 8px #ffffff;
+      --nm-extruded-pill: 5px 5px 10px #bec8d4, -5px -5px 10px #ffffff;
+
+      /* Inset Shadows */
+      --nm-inset: inset 5px 5px 10px #bec8d4, inset -5px -5px 10px #ffffff;
+      --nm-inset-sm: inset 3px 3px 6px #bec8d4, inset -3px -3px 6px #ffffff;
+      --nm-inset-deep: inset 8px 8px 16px #b4becb, inset -8px -8px 16px #ffffff;
+
+      /* Semantic Accents */
+      --nm-accent-blue: #3b82f6;
+      --nm-accent-blue-glow: 0 0 12px rgba(59, 130, 246, 0.35);
+      --nm-accent-amber: #f59e0b;
+      --nm-accent-amber-glow: 0 0 12px rgba(245, 158, 11, 0.35);
+      --nm-accent-green: #10b981;
+      --nm-accent-rose: #f43f5e;
     }
 
     * {
@@ -31,10 +42,13 @@
     }
 
     body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: var(--font-main);
+      background-color: var(--nm-bg);
+      color: var(--nm-text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       min-height: 100vh;
+      margin: 0;
+      padding: 1.5rem;
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
@@ -42,60 +56,65 @@
 
     /* HEADER */
     header {
-      background: rgba(17, 24, 39, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--card-border);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      padding: 1rem 2rem;
+      background: var(--nm-surface);
+      box-shadow: var(--nm-extruded);
+      border-radius: 20px;
+      border: 1px solid var(--nm-border-light);
+      padding: 1rem 1.75rem;
+      margin-bottom: 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 1rem;
       flex-wrap: wrap;
+      position: sticky;
+      top: 1rem;
+      z-index: 50;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.85rem;
     }
 
     .brand-logo {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      border-radius: 10px;
+      width: 42px;
+      height: 42px;
+      background: var(--nm-surface);
+      box-shadow: var(--nm-extruded-sm);
+      border: 1px solid var(--nm-border-light);
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 1.1rem;
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+      font-size: 1.25rem;
+      color: var(--nm-accent-blue);
     }
 
     .brand-title {
       font-size: 1.25rem;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: -0.02em;
+      color: var(--nm-text);
     }
 
     .brand-badge {
-      font-size: 0.7rem;
-      background: rgba(99, 102, 241, 0.15);
-      color: var(--primary);
-      padding: 0.2rem 0.5rem;
+      font-size: 0.72rem;
+      background: var(--nm-surface);
+      box-shadow: var(--nm-inset-sm);
+      color: var(--nm-accent-blue);
+      padding: 0.25rem 0.65rem;
       border-radius: 9999px;
-      font-weight: 600;
-      border: 1px solid rgba(99, 102, 241, 0.3);
+      font-weight: 700;
+      letter-spacing: 0.03em;
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 0.85rem;
+      gap: 0.75rem;
       flex-wrap: wrap;
     }
 
@@ -103,31 +122,37 @@
       display: flex;
       align-items: center;
       gap: 0.4rem;
-      background: rgba(31, 41, 55, 0.6);
-      padding: 0.2rem 0.5rem;
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
+      background: var(--nm-surface);
+      box-shadow: var(--nm-inset-sm);
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
     }
 
     .user-select {
       background: transparent;
-      color: var(--text);
+      color: var(--nm-text);
       border: none;
-      font-family: var(--font-main);
+      font-family: inherit;
       font-size: 0.85rem;
       font-weight: 600;
       outline: none;
       cursor: pointer;
     }
 
+    .user-select option {
+      background: var(--nm-surface);
+      color: var(--nm-text);
+    }
+
     .live-clock {
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      background: rgba(31, 41, 55, 0.6);
-      padding: 0.4rem 0.8rem;
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--nm-text-muted);
+      background: var(--nm-surface);
+      box-shadow: var(--nm-inset-sm);
+      padding: 0.4rem 0.85rem;
+      border-radius: 9999px;
     }
 
     .status-pill {
@@ -135,20 +160,20 @@
       align-items: center;
       gap: 0.5rem;
       font-size: 0.8rem;
-      font-weight: 600;
-      padding: 0.35rem 0.75rem;
+      font-weight: 700;
+      padding: 0.4rem 0.85rem;
       border-radius: 9999px;
-      background: rgba(16, 185, 129, 0.1);
-      color: var(--success);
-      border: 1px solid rgba(16, 185, 129, 0.25);
+      background: var(--nm-surface);
+      box-shadow: var(--nm-inset-sm);
+      color: var(--nm-accent-green);
     }
 
     .status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 8px var(--success);
+      background: var(--nm-accent-green);
+      box-shadow: 0 0 8px var(--nm-accent-green);
       animation: pulse 2s infinite;
     }
 
@@ -157,78 +182,14 @@
       50% { opacity: 0.4; }
     }
 
-    /* BUTTONS */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 0.55rem 1.15rem;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.875rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-family: var(--font-main);
-      text-decoration: none;
-    }
-
-    .btn:hover {
-      background: var(--primary-hover);
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-    }
-
-    .btn-secondary {
-      background: rgba(31, 41, 55, 0.8);
-      color: var(--text);
-      border: 1px solid var(--card-border);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(55, 65, 81, 0.8);
-      box-shadow: none;
-    }
-
-    .btn-accent {
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      color: #fff;
-      border: none;
-    }
-
-    .btn-accent:hover {
-      opacity: 0.95;
-      box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);
-    }
-
-    .btn-sync {
-      background: rgba(99, 102, 241, 0.15);
-      color: #818cf8;
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      padding: 0.4rem 0.85rem;
-      font-size: 0.8rem;
-    }
-
-    .btn-sync:hover {
-      background: rgba(99, 102, 241, 0.25);
-      border-color: rgba(99, 102, 241, 0.5);
-      color: #fff;
-    }
-
-    .btn-sync:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
     .last-sync-badge {
-      font-family: var(--font-mono);
+      font-family: 'JetBrains Mono', monospace;
       font-size: 0.8rem;
-      color: var(--text-muted);
-      background: rgba(31, 41, 55, 0.5);
-      padding: 0.4rem 0.75rem;
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
+      color: var(--nm-text-muted);
+      background: var(--nm-surface);
+      box-shadow: var(--nm-inset-sm);
+      padding: 0.4rem 0.85rem;
+      border-radius: 9999px;
       display: flex;
       align-items: center;
       gap: 0.4rem;
@@ -245,88 +206,184 @@
       to { transform: rotate(360deg); }
     }
 
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      background: var(--nm-surface);
+      color: var(--nm-accent-blue);
+      border: 1px solid var(--nm-border-light);
+      box-shadow: var(--nm-extruded-sm);
+      padding: 0.65rem 1.25rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      text-decoration: none;
+      user-select: none;
+    }
+
+    .btn:hover {
+      color: var(--nm-accent-blue);
+      box-shadow: var(--nm-extruded);
+    }
+
+    .btn:active, .btn.pressed {
+      box-shadow: var(--nm-inset-sm) !important;
+      transform: scale(0.98);
+    }
+
+    .btn-secondary {
+      color: var(--nm-text);
+      background: var(--nm-surface);
+      box-shadow: var(--nm-extruded-sm);
+      border: 1px solid var(--nm-border-light);
+    }
+
+    .btn-secondary:hover {
+      color: var(--nm-text);
+      box-shadow: var(--nm-extruded);
+    }
+
+    .btn-secondary:active {
+      box-shadow: var(--nm-inset-sm) !important;
+      transform: scale(0.98);
+    }
+
+    .btn-sync {
+      color: var(--nm-accent-blue);
+      padding: 0.45rem 0.95rem;
+      font-size: 0.82rem;
+    }
+
+    .btn-sync:disabled, .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: var(--nm-inset-sm);
+      transform: none;
+    }
+
+    .btn-action {
+      background: var(--nm-surface);
+      border: 1px solid var(--nm-border-light);
+      box-shadow: var(--nm-extruded-sm);
+      color: var(--nm-text-muted);
+      padding: 0.4rem 0.75rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .btn-action:hover {
+      color: var(--nm-text);
+      box-shadow: var(--nm-extruded);
+    }
+
+    .btn-action:active {
+      box-shadow: var(--nm-inset-sm) !important;
+      transform: scale(0.98);
+    }
+
+    .btn-action.btn-test-alert:hover {
+      color: var(--nm-accent-blue);
+    }
+
+    .btn-action.btn-delete:hover {
+      color: var(--nm-accent-rose);
+    }
+
     /* CONTAINER & METRICS */
     main {
       flex: 1;
       max-width: 1400px;
       width: 100%;
       margin: 0 auto;
-      padding: 2rem;
+      padding: 0 0.5rem;
     }
 
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1rem;
+      gap: 1.25rem;
       margin-bottom: 2rem;
     }
 
     .metric-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 1.25rem 1.5rem;
+      background: var(--nm-surface);
+      border-radius: 24px;
+      box-shadow: var(--nm-extruded-lg);
+      border: 1px solid var(--nm-border-light);
+      padding: 1.5rem;
       display: flex;
       flex-direction: column;
       gap: 0.4rem;
-      transition: border-color 0.2s;
-    }
-
-    .metric-card:hover {
-      border-color: rgba(99, 102, 241, 0.4);
+      transition: transform 0.2s ease;
     }
 
     .metric-label {
       font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-muted);
+      font-weight: 700;
+      color: var(--nm-text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     .metric-value {
-      font-size: 1.85rem;
+      font-size: 2rem;
       font-weight: 800;
-      color: var(--text);
-      font-family: var(--font-mono);
+      color: var(--nm-text);
+      font-family: 'JetBrains Mono', monospace;
     }
 
-    /* TABS */
+    /* TAB RAIL & BUTTONS */
     .tabs-nav {
       display: flex;
       gap: 0.5rem;
-      border-bottom: 1px solid var(--card-border);
+      background: var(--nm-surface);
+      box-shadow: var(--nm-inset);
+      border-radius: 9999px;
+      padding: 6px;
       margin-bottom: 2rem;
-      padding-bottom: 0.25rem;
+      border: none;
       overflow-x: auto;
+      align-items: center;
     }
 
     .tab-btn {
       background: transparent;
       border: none;
-      color: var(--text-muted);
-      font-size: 0.95rem;
+      color: var(--nm-text-muted);
+      font-size: 0.92rem;
       font-weight: 600;
-      padding: 0.65rem 1.2rem;
-      border-radius: 8px;
+      padding: 0.65rem 1.4rem;
+      border-radius: 9999px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      transition: all 0.2s;
-      font-family: var(--font-main);
+      transition: all 0.2s ease;
+      font-family: inherit;
       white-space: nowrap;
     }
 
     .tab-btn:hover {
-      color: var(--text);
-      background: rgba(31, 41, 55, 0.4);
+      color: var(--nm-text);
     }
 
     .tab-btn.active {
-      color: #fff;
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.3);
+      background: var(--nm-surface);
+      color: var(--nm-accent-blue);
+      box-shadow: var(--nm-extruded-pill);
+      font-weight: 700;
     }
 
     .tab-content {
@@ -347,77 +404,123 @@
     .timetable-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.25rem;
+      gap: 1.5rem;
       align-items: start;
     }
 
     .day-column {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
+      background: var(--nm-surface);
+      border-radius: 24px;
+      box-shadow: var(--nm-extruded-lg);
+      border: 1px solid var(--nm-border-light);
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      padding: 1.25rem;
+      gap: 0.75rem;
     }
 
     .day-header {
-      background: rgba(31, 41, 55, 0.5);
-      padding: 0.85rem 1.25rem;
-      font-weight: 700;
-      font-size: 0.9rem;
-      border-bottom: 1px solid var(--card-border);
+      padding: 0.25rem 0.25rem 0.75rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 0.5rem;
     }
 
-    .day-header.today {
-      background: rgba(99, 102, 241, 0.2);
-      border-bottom-color: rgba(99, 102, 241, 0.3);
-      color: #fff;
+    .day-pill {
+      box-shadow: var(--nm-extruded-pill);
+      border-radius: 9999px;
+      background: var(--nm-surface);
+      padding: 0.45rem 1rem;
+      font-weight: 800;
+      font-size: 0.85rem;
+      color: var(--nm-text);
+      border: 1px solid var(--nm-border-light);
+      letter-spacing: 0.03em;
+    }
+
+    .today-pill {
+      box-shadow: var(--nm-inset-sm);
+      border-radius: 9999px;
+      background: var(--nm-surface);
+      padding: 0.3rem 0.65rem;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--nm-accent-blue);
+      letter-spacing: 0.05em;
     }
 
     .day-slots {
-      padding: 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.85rem;
       min-height: 120px;
     }
 
     .slot-card {
-      background: rgba(17, 24, 39, 0.6);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 0.85rem;
+      background: var(--nm-surface);
+      border-radius: 14px;
+      box-shadow: var(--nm-extruded-sm);
+      border: 1px solid var(--nm-border-light);
+      padding: 0.95rem;
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
-      transition: all 0.2s;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
     }
 
     .slot-card:hover {
-      border-color: rgba(99, 102, 241, 0.4);
-      background: rgba(31, 41, 55, 0.4);
       transform: translateY(-2px);
+      box-shadow: var(--nm-extruded);
+    }
+
+    .slot-card-theory {
+      border-left: 5px solid var(--nm-accent-blue);
+    }
+
+    .slot-card-lab {
+      border-left: 5px solid var(--nm-accent-amber);
+    }
+
+    .slot-badge-class {
+      box-shadow: var(--nm-inset-sm);
+      color: var(--nm-accent-blue);
+      background: var(--nm-surface);
+      border-radius: 9999px;
+      padding: 0.2rem 0.55rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .slot-badge-lab {
+      box-shadow: var(--nm-inset-sm);
+      color: var(--nm-accent-amber);
+      background: var(--nm-surface);
+      border-radius: 9999px;
+      padding: 0.2rem 0.55rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
     }
 
     .slot-time {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--accent);
-      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--nm-accent-blue);
+      font-weight: 700;
     }
 
     .slot-code {
-      font-weight: 700;
+      font-weight: 800;
       font-size: 1rem;
-      color: #fff;
+      color: var(--nm-text);
     }
 
     .slot-meta {
-      font-size: 0.8rem;
-      color: var(--text-muted);
+      font-size: 0.82rem;
+      color: var(--nm-text-muted);
       display: flex;
       flex-direction: column;
       gap: 0.2rem;
@@ -429,42 +532,53 @@
     }
 
     .no-classes {
-      color: var(--text-muted);
+      color: var(--nm-text-muted);
       font-size: 0.85rem;
       text-align: center;
-      padding: 2rem 0;
+      padding: 2.5rem 1rem;
       font-style: italic;
     }
 
-    /* DEADLINES / EVENTS */
+    /* DEADLINES / EXAMS LIST */
     .events-toolbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .events-list-inset {
+      background: var(--nm-surface);
+      box-shadow: var(--nm-inset);
+      border-radius: 24px;
+      padding: 1.25rem;
     }
 
     .events-list {
       display: flex;
       flex-direction: column;
-      gap: 0.85rem;
+      gap: 1rem;
     }
 
     .event-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 1.25rem 1.5rem;
+      background: var(--nm-surface);
+      border: 1px solid var(--nm-border-light);
+      border-radius: 16px;
+      box-shadow: var(--nm-extruded-sm);
+      padding: 1.15rem 1.4rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 1rem;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
       flex-wrap: wrap;
     }
 
     .event-card:hover {
-      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-1px);
+      box-shadow: var(--nm-extruded);
     }
 
     .event-info {
@@ -475,48 +589,46 @@
     }
 
     .event-badge {
-      font-family: var(--font-mono);
+      font-family: 'JetBrains Mono', monospace;
       font-size: 0.75rem;
       font-weight: 700;
-      padding: 0.35rem 0.75rem;
-      border-radius: 6px;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      background: var(--nm-surface);
     }
 
     .badge-midterm {
-      background: rgba(155, 89, 182, 0.15);
-      color: #c084fc;
-      border: 1px solid rgba(155, 89, 182, 0.3);
+      box-shadow: var(--nm-inset-sm);
+      color: var(--nm-accent-amber);
     }
 
     .badge-final {
-      background: rgba(231, 76, 60, 0.15);
-      color: #f87171;
-      border: 1px solid rgba(231, 76, 60, 0.3);
+      box-shadow: var(--nm-inset-sm);
+      color: var(--nm-accent-rose);
     }
 
     .badge-quiz {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.3);
+      box-shadow: var(--nm-inset-sm);
+      color: var(--nm-accent-blue);
     }
 
     .badge-assignment {
-      background: rgba(6, 182, 212, 0.15);
-      color: #38bdf8;
-      border: 1px solid rgba(6, 182, 212, 0.3);
+      box-shadow: var(--nm-inset-sm);
+      color: var(--nm-accent-green);
     }
 
     .event-title {
       font-weight: 700;
       font-size: 1.05rem;
+      color: var(--nm-text);
       margin-bottom: 0.25rem;
     }
 
     .event-sub {
       font-size: 0.85rem;
-      color: var(--text-muted);
+      color: var(--nm-text-muted);
       display: flex;
       align-items: center;
       flex-wrap: wrap;
@@ -524,13 +636,13 @@
     }
 
     .countdown-badge {
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
       font-weight: 600;
       padding: 0.4rem 0.85rem;
-      border-radius: 8px;
-      background: rgba(31, 41, 55, 0.6);
-      border: 1px solid var(--card-border);
+      border-radius: 9999px;
+      background: var(--nm-surface);
+      box-shadow: var(--nm-inset-sm);
       white-space: nowrap;
     }
 
@@ -540,45 +652,13 @@
       gap: 0.5rem;
     }
 
-    .btn-action {
-      background: transparent;
-      border: 1px solid var(--card-border);
-      color: var(--text-muted);
-      padding: 0.35rem 0.65rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: 600;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-
-    .btn-action:hover {
-      color: #fff;
-      border-color: rgba(99, 102, 241, 0.4);
-      background: rgba(99, 102, 241, 0.1);
-    }
-
-    .btn-action.btn-test-alert:hover {
-      color: #38bdf8;
-      border-color: rgba(6, 182, 212, 0.4);
-      background: rgba(6, 182, 212, 0.1);
-    }
-
-    .btn-action.btn-delete:hover {
-      color: #ef4444;
-      border-color: rgba(239, 68, 68, 0.4);
-      background: rgba(239, 68, 68, 0.1);
-    }
-
     /* INGESTION PORTAL */
     .import-hero {
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.08));
-      border: 1px solid rgba(99, 102, 241, 0.25);
-      border-radius: 16px;
-      padding: 1.5rem 2rem;
+      background: var(--nm-surface);
+      box-shadow: var(--nm-extruded-lg);
+      border: 1px solid var(--nm-border-light);
+      border-radius: 24px;
+      padding: 1.75rem 2rem;
       margin-bottom: 2rem;
     }
 
@@ -590,9 +670,10 @@
     }
 
     .import-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
+      background: var(--nm-surface);
+      border-radius: 24px;
+      box-shadow: var(--nm-extruded-lg);
+      border: 1px solid var(--nm-border-light);
       padding: 1.75rem;
       display: flex;
       flex-direction: column;
@@ -602,92 +683,45 @@
     .import-card-header {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.85rem;
     }
 
     .import-card-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: rgba(99, 102, 241, 0.15);
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: var(--nm-surface);
+      box-shadow: var(--nm-extruded-sm);
+      border: 1px solid var(--nm-border-light);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.25rem;
-      color: var(--primary);
-      border: 1px solid rgba(99, 102, 241, 0.3);
+      font-size: 1.3rem;
+      color: var(--nm-accent-blue);
     }
 
     .drop-zone {
-      border: 2px dashed var(--card-border);
-      border-radius: 14px;
-      padding: 2.5rem 1.5rem;
+      border: 2px dashed #a0aec0;
+      border-radius: 20px;
+      padding: 2.5rem;
       text-align: center;
       cursor: pointer;
-      transition: all 0.2s;
-      background: rgba(17, 24, 39, 0.4);
+      transition: all 0.2s ease;
+      background: var(--nm-surface);
+      box-shadow: var(--nm-inset-deep);
     }
 
     .drop-zone:hover, .drop-zone.dragover {
-      border-color: var(--primary);
-      background: rgba(99, 102, 241, 0.08);
-    }
-
-    .bookmark-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      background: linear-gradient(135deg, #4f46e5, #0891b2);
-      color: #fff;
-      padding: 0.85rem 1.5rem;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 1rem;
-      cursor: grab;
-      text-decoration: none;
-      box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .bookmark-pill:active {
-      cursor: grabbing;
-    }
-
-    .step-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      font-size: 0.875rem;
-      color: var(--text-muted);
-    }
-
-    .step-list li {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.65rem;
-    }
-
-    .step-num {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: rgba(99, 102, 241, 0.2);
-      color: var(--primary);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 0.75rem;
-      flex-shrink: 0;
-      margin-top: 1px;
+      border-color: var(--nm-accent-blue);
+      box-shadow: var(--nm-inset-deep), var(--nm-accent-blue-glow);
     }
 
     /* TABLE / LOGS */
     .table-container {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
+      background: var(--nm-surface);
+      border-radius: 24px;
+      box-shadow: var(--nm-extruded-lg);
+      border: 1px solid var(--nm-border-light);
       overflow: hidden;
     }
 
@@ -698,20 +732,21 @@
     }
 
     th {
-      background: rgba(31, 41, 55, 0.5);
-      padding: 0.85rem 1.25rem;
+      background: rgba(190, 200, 212, 0.2);
+      padding: 0.95rem 1.25rem;
       font-size: 0.75rem;
       font-weight: 700;
-      color: var(--text-muted);
+      color: var(--nm-text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      border-bottom: 1px solid var(--card-border);
+      border-bottom: 1px solid rgba(190, 200, 212, 0.4);
     }
 
     td {
       padding: 1rem 1.25rem;
-      border-bottom: 1px solid rgba(31, 41, 55, 0.4);
+      border-bottom: 1px solid rgba(190, 200, 212, 0.25);
       font-size: 0.9rem;
+      color: var(--nm-text);
     }
 
     tr:last-child td {
@@ -722,20 +757,52 @@
       display: inline-block;
       font-size: 0.75rem;
       font-weight: 700;
-      padding: 0.25rem 0.6rem;
-      border-radius: 6px;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      background: var(--nm-surface);
     }
 
     .log-sent {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--success);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      box-shadow: var(--nm-inset-sm);
+      color: var(--nm-accent-green);
     }
 
     .log-failed {
-      background: rgba(239, 68, 68, 0.15);
-      color: var(--danger);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      box-shadow: var(--nm-inset-sm);
+      color: var(--nm-accent-rose);
+    }
+
+    /* FORMS & INPUTS */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .form-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--nm-text);
+    }
+
+    .form-input, .form-select, textarea {
+      background: var(--nm-surface);
+      border: none;
+      box-shadow: var(--nm-inset);
+      color: var(--nm-text);
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    .form-input:focus, .form-select:focus, textarea:focus {
+      box-shadow: var(--nm-inset), var(--nm-accent-blue-glow);
     }
 
     /* MODAL */
@@ -745,13 +812,13 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(4px);
+      background: rgba(45, 55, 72, 0.45);
+      backdrop-filter: blur(8px);
       z-index: 100;
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 1rem;
+      padding: 1.5rem;
     }
 
     .modal-overlay.active {
@@ -759,42 +826,13 @@
     }
 
     .modal-box {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      max-width: 500px;
+      background: var(--nm-surface);
+      border-radius: 24px;
+      box-shadow: var(--nm-extruded-lg);
+      border: 1px solid var(--nm-border-light);
+      max-width: 520px;
       width: 100%;
-      padding: 2rem;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      margin-bottom: 1.2rem;
-    }
-
-    .form-label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-muted);
-    }
-
-    .form-input, .form-select {
-      background: rgba(17, 24, 39, 0.8);
-      border: 1px solid var(--card-border);
-      color: var(--text);
-      padding: 0.65rem 0.9rem;
-      border-radius: 8px;
-      font-family: var(--font-main);
-      font-size: 0.9rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .form-input:focus, .form-select:focus {
-      border-color: var(--primary);
+      padding: 2.25rem;
     }
 
     /* PASSCODE LOCK GATE */
@@ -804,12 +842,12 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: var(--bg);
+      background: var(--nm-bg);
       z-index: 999;
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 1rem;
+      padding: 1.5rem;
     }
 
     .lock-gate.active {
@@ -817,28 +855,28 @@
     }
 
     .lock-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
+      background: var(--nm-surface);
+      border-radius: 24px;
+      box-shadow: var(--nm-extruded-lg);
+      border: 1px solid var(--nm-border-light);
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
       padding: 2.5rem;
       text-align: center;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
     }
 
     .lock-icon {
       width: 64px;
       height: 64px;
-      background: rgba(99, 102, 241, 0.15);
-      color: var(--primary);
-      border-radius: 16px;
+      background: var(--nm-surface);
+      box-shadow: var(--nm-inset);
+      color: var(--nm-accent-blue);
+      border-radius: 18px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-size: 2rem;
       margin-bottom: 1.25rem;
-      border: 1px solid rgba(99, 102, 241, 0.3);
     }
 
     /* TOAST */
@@ -849,25 +887,26 @@
       z-index: 1000;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.65rem;
     }
 
     .toast {
-      background: #1f2937;
-      color: #fff;
-      border: 1px solid var(--card-border);
+      background: var(--nm-surface);
+      box-shadow: var(--nm-extruded);
+      border-radius: 14px;
+      border: 1px solid var(--nm-border-light);
+      color: var(--nm-text);
       padding: 0.85rem 1.25rem;
-      border-radius: 10px;
       font-size: 0.9rem;
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
       animation: slideIn 0.25s ease-out;
+      font-weight: 600;
     }
 
-    .toast.success { border-left: 4px solid var(--success); }
-    .toast.error { border-left: 4px solid var(--danger); }
+    .toast.success { border-left: 5px solid var(--nm-accent-green); }
+    .toast.error { border-left: 5px solid var(--nm-accent-rose); }
 
     @keyframes slideIn {
       from { transform: translateX(100%); opacity: 0; }
@@ -881,13 +920,13 @@
   <div id="lockGate" class="lock-gate">
     <div class="lock-card">
       <div class="lock-icon">🔒</div>
-      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.4rem;">FRIDAY Dashboard Protected</h2>
-      <p style="color:var(--text-muted); font-size:0.875rem; margin-bottom:1.5rem;">Enter your passcode to access your academic schedule.</p>
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.4rem; color:var(--nm-text);">FRIDAY Dashboard Protected</h2>
+      <p style="color:var(--nm-text-muted); font-size:0.875rem; margin-bottom:1.5rem;">Enter your passcode to access your academic schedule.</p>
       <form onsubmit="handleUnlock(event)">
         <div class="form-group" style="margin-bottom:1rem;">
           <input type="password" id="gatePasscodeInput" class="form-input" placeholder="Enter Passcode" style="text-align:center; font-size:1.1rem; letter-spacing:0.1em;" required autofocus>
         </div>
-        <div id="lockErrorMsg" style="color:var(--danger); font-size:0.8rem; margin-bottom:1rem; display:none;">Incorrect passcode. Please try again.</div>
+        <div id="lockErrorMsg" style="color:var(--nm-accent-rose); font-size:0.8rem; margin-bottom:1rem; display:none;">Incorrect passcode. Please try again.</div>
         <button type="submit" class="btn" style="width:100%; justify-content:center; padding:0.8rem;">Unlock Dashboard</button>
       </form>
     </div>
@@ -915,7 +954,7 @@
 
       <div id="lastSyncBadge" class="last-sync-badge">
         <span>🔄</span>
-        <span style="color:var(--text-muted);">Synced:</span>
+        <span style="color:var(--nm-text-muted);">Synced:</span>
         <span id="lastSyncText">Loading...</span>
       </div>
       <button id="btnSyncSchedule" class="btn btn-sync" onclick="handleSyncSchedule(event)" title="One-click schedule sync from raw portal data">
@@ -958,7 +997,7 @@
       </div>
     </div>
 
-    <!-- TABS NAVIGATION -->
+    <!-- TABS NAVIGATION (SUNKEN RAIL) -->
     <div class="tabs-nav">
       <button class="tab-btn active" onclick="switchTab('timetable', event)">
         📅 Weekly Timetable
@@ -987,34 +1026,36 @@
     <!-- TAB 2: ACADEMIC DEADLINES -->
     <div id="tab-deadlines" class="tab-content">
       <div class="events-toolbar">
-        <h2 style="font-size: 1.15rem; font-weight: 700;">Upcoming Deadlines & Exams</h2>
+        <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--nm-text);">Upcoming Deadlines & Exams</h2>
         <button class="btn" onclick="openAddEventModal()">
           <span>+</span> Add Custom Task
         </button>
       </div>
-      <div class="events-list" id="eventsList">
-        <!-- Rendered dynamically -->
+      <div class="events-list-inset" id="eventsListInset">
+        <div class="events-list" id="eventsList">
+          <!-- Rendered dynamically -->
+        </div>
       </div>
     </div>
 
-    <!-- TAB 3: INGESTION PORTAL (PHASE 5) -->
+    <!-- TAB 3: INGESTION PORTAL -->
     <div id="tab-import" class="tab-content">
       <div class="import-hero">
-        <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.35rem;">📥 Your Dashboard — Schedule Ingestion</h2>
-        <p style="color:var(--text-muted); font-size:0.92rem; line-height:1.5;">
-          Connect your academic course schedule to your Discord account. Run <code style="color:var(--accent); font-family:var(--font-mono); font-weight:700;">/start</code> on Discord with <strong>@FRIDAY</strong> to generate your unique pairing code.
+        <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.35rem; color:var(--nm-text);">📥 Your Dashboard — Schedule Ingestion</h2>
+        <p style="color:var(--nm-text-muted); font-size:0.92rem; line-height:1.5;">
+          Connect your academic course schedule to your Discord account. Run <code style="color:var(--nm-accent-blue); font-family:'JetBrains Mono', monospace; font-weight:700;">/start</code> on Discord with <strong>@FRIDAY</strong> to generate your unique pairing code.
         </p>
       </div>
 
       <!-- Pairing Code Input Card -->
       <div class="import-card" style="margin-bottom:1.5rem;">
         <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label" style="font-size:0.95rem; font-weight:700; color:#fff;">
+          <label class="form-label" style="font-size:0.95rem; font-weight:700; color:var(--nm-text);">
             🔑 Enter Your Personal Pairing Code
           </label>
           <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
-            <input type="text" id="importPairingCode" class="form-input" placeholder="e.g. BRC-A7F92B or DEFAULT1" style="font-family:var(--font-mono); font-size:1.1rem; text-transform:uppercase; max-width:320px;" required>
-            <span style="font-size:0.82rem; color:var(--text-muted);">Obtain by running <code style="color:var(--accent);">/start</code> on Discord.</span>
+            <input type="text" id="importPairingCode" class="form-input" placeholder="e.g. BRC-A7F92B or DEFAULT1" style="font-family:'JetBrains Mono', monospace; font-size:1.1rem; text-transform:uppercase; max-width:320px;" required>
+            <span style="font-size:0.82rem; color:var(--nm-text-muted);">Obtain by running <code style="color:var(--nm-accent-blue);">/start</code> on Discord.</span>
           </div>
         </div>
       </div>
@@ -1026,20 +1067,20 @@
           <div class="import-card-header">
             <div class="import-card-icon">📁</div>
             <div>
-              <h3 style="font-size:1.1rem; font-weight:700;">Option A: Routine & Schedule Upload</h3>
-              <p style="color:var(--text-muted); font-size:0.85rem;">Upload your BRACU advising slip PDF or <code style="color:var(--accent);">schedule_raw.json</code></p>
+              <h3 style="font-size:1.1rem; font-weight:700; color:var(--nm-text);">Option A: Routine & Schedule Upload</h3>
+              <p style="color:var(--nm-text-muted); font-size:0.85rem;">Upload your BRACU advising slip PDF or <code style="color:var(--nm-accent-blue);">schedule_raw.json</code></p>
             </div>
           </div>
 
           <div id="fileDropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
-            <div style="font-size:2.2rem; margin-bottom:0.5rem;">📄</div>
-            <div style="font-weight:600; font-size:0.95rem; margin-bottom:0.25rem;">Click or Drag & Drop Advising PDF or <code style="color:var(--accent);">schedule_raw.json</code> here</div>
-            <div style="font-size:0.8rem; color:var(--text-muted);">Supports BRACU Advising Slip PDF & Connect JSON exports</div>
+            <div style="font-size:2.4rem; margin-bottom:0.5rem;">📄</div>
+            <div style="font-weight:700; font-size:0.95rem; margin-bottom:0.25rem; color:var(--nm-text);">Click or Drag & Drop Advising PDF or <code style="color:var(--nm-accent-blue);">schedule_raw.json</code> here</div>
+            <div style="font-size:0.82rem; color:var(--nm-text-muted);">Supports BRACU Advising Slip PDF & Connect JSON exports</div>
             <input type="file" id="fileInput" accept=".pdf,.json,application/pdf,application/json" style="display:none" onchange="handleFileSelected(event)">
           </div>
 
-          <div id="selectedFileInfo" style="display:none; padding:0.6rem 0.85rem; border-radius:8px; background:rgba(99, 102, 241, 0.1); border:1px solid rgba(99, 102, 241, 0.25); font-size:0.85rem;">
-            Selected: <strong id="selectedFileName" style="color:#fff;">--</strong> (<span id="selectedFileSize">--</span>)
+          <div id="selectedFileInfo" style="display:none; padding:0.6rem 0.85rem; border-radius:12px; background:var(--nm-surface); box-shadow:var(--nm-inset-sm); font-size:0.85rem; color:var(--nm-text);">
+            Selected: <strong id="selectedFileName" style="color:var(--nm-accent-blue);">--</strong> (<span id="selectedFileSize">--</span>)
           </div>
 
           <button id="btnUploadSchedule" class="btn" style="justify-content:center; padding:0.75rem;" onclick="handleUploadFile()" disabled>
@@ -1052,32 +1093,32 @@
           <div class="import-card-header">
             <div class="import-card-icon">👨‍🏫</div>
             <div>
-              <h3 style="font-size:1.1rem; font-weight:700;">Option B: Faculty Consultation Schedules</h3>
-              <p style="color:var(--text-muted); font-size:0.85rem;">Look up office hours or register faculty consultation slots</p>
+              <h3 style="font-size:1.1rem; font-weight:700; color:var(--nm-text);">Option B: Faculty Consultation Schedules</h3>
+              <p style="color:var(--nm-text-muted); font-size:0.85rem;">Look up office hours or register faculty consultation slots</p>
             </div>
           </div>
 
           <!-- Instant Live Search Bar -->
           <div>
-            <label class="form-label" style="font-size:0.85rem; font-weight:700; margin-bottom:0.35rem; color:#fff;">
+            <label class="form-label" style="font-size:0.85rem; font-weight:700; margin-bottom:0.35rem; color:var(--nm-text);">
               🔍 Search Faculty Office Hours
             </label>
             <div style="display:flex; gap:0.5rem; align-items:center;">
-              <input type="text" id="consultationSearchInput" class="form-input" placeholder="Enter faculty initial (e.g. MSI, TSM, SHH)..." style="font-family:var(--font-mono); text-transform:uppercase; font-size:0.95rem;" oninput="handleConsultationSearch(this.value)">
+              <input type="text" id="consultationSearchInput" class="form-input" placeholder="Enter faculty initial (e.g. MSI, TSM, SHH)..." style="font-family:'JetBrains Mono', monospace; text-transform:uppercase; font-size:0.95rem;" oninput="handleConsultationSearch(this.value)">
               <button class="btn btn-secondary" style="padding:0.6rem 1rem;" onclick="handleConsultationSearch(document.getElementById('consultationSearchInput').value)">Search</button>
             </div>
           </div>
 
           <!-- Live Results Container -->
-          <div id="consultationSearchResults" style="display:none; max-height:220px; overflow-y:auto; border-radius:12px; background:rgba(17, 24, 39, 0.6); border:1px solid var(--card-border); padding:0.75rem;">
+          <div id="consultationSearchResults" style="display:none; max-height:220px; overflow-y:auto; border-radius:14px; background:var(--nm-surface); box-shadow:var(--nm-inset-sm); padding:0.75rem;">
             <!-- Rendered dynamically -->
           </div>
 
-          <div style="border-top:1px solid var(--card-border); margin:0.1rem 0;"></div>
+          <div style="border-top:1px solid rgba(190, 200, 212, 0.4); margin:0.1rem 0;"></div>
 
           <!-- Mode Switcher: Multi-Slot Builder vs Batch Paste -->
-          <div style="display:flex; gap:0.5rem; margin-top:0.4rem; margin-bottom:0.75rem;">
-            <button type="button" id="btnModeForm" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem; border-color:var(--primary); background:rgba(99,102,241,0.2);" onclick="switchConsultMode('form')">
+          <div style="display:flex; gap:0.5rem; margin-top:0.2rem; margin-bottom:0.5rem;">
+            <button type="button" id="btnModeForm" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem; box-shadow:var(--nm-inset-sm); color:var(--nm-accent-blue);" onclick="switchConsultMode('form')">
               📋 Multi-Slot Builder
             </button>
             <button type="button" id="btnModeBulk" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem;" onclick="switchConsultMode('bulk')">
@@ -1087,14 +1128,14 @@
 
           <!-- 1. MULTI-SLOT BUILDER FORM -->
           <div id="consultFormContainer">
-            <div style="font-weight:700; font-size:0.95rem; color:#fff; margin-bottom:0.6rem;">
+            <div style="font-weight:700; font-size:0.95rem; color:var(--nm-text); margin-bottom:0.6rem;">
               ➕ Multi-Slot Faculty Consultation Builder
             </div>
             <form id="consultationForm" onsubmit="handleSaveConsultation(event)" style="display:flex; flex-direction:column; gap:0.65rem;">
               <div style="display:grid; grid-template-columns:1fr 1.6fr; gap:0.6rem;">
                 <div>
                   <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Initial *</label>
-                  <input type="text" id="consultInitial" class="form-input" placeholder="e.g. MSI" required style="font-family:var(--font-mono); text-transform:uppercase; padding:0.45rem 0.65rem; font-size:0.85rem;">
+                  <input type="text" id="consultInitial" class="form-input" placeholder="e.g. MSI" required style="font-family:'JetBrains Mono', monospace; text-transform:uppercase; padding:0.45rem 0.65rem; font-size:0.85rem;">
                 </div>
                 <div>
                   <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Faculty Name</label>
@@ -1108,10 +1149,10 @@
               </div>
 
               <div style="margin-top:0.35rem;">
-                <label class="form-label" style="font-size:0.78rem; margin-bottom:0.35rem; color:#fff;">Time Slots across Weekdays:</label>
+                <label class="form-label" style="font-size:0.78rem; margin-bottom:0.35rem; color:var(--nm-text);">Time Slots across Weekdays:</label>
                 <div id="consultSlotRows" style="display:flex; flex-direction:column; gap:0.6rem;">
                   <!-- Row 1 -->
-                  <div class="consult-slot-row" style="background:rgba(31, 41, 55, 0.45); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.6rem; display:flex; flex-direction:column; gap:0.45rem;">
+                  <div class="consult-slot-row" style="background:var(--nm-surface); box-shadow:var(--nm-inset-sm); border-radius:12px; padding:0.65rem; display:flex; flex-direction:column; gap:0.45rem;">
                     <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.5rem;">
                       <div>
                         <select class="form-select consult-row-day" required style="padding:0.4rem 0.5rem; font-size:0.82rem;">
@@ -1134,7 +1175,7 @@
                     <div style="display:grid; grid-template-columns:1fr 1.3fr auto; gap:0.5rem; align-items:center;">
                       <input type="text" class="form-input consult-row-room" placeholder="Room (e.g. UB0821)" style="padding:0.4rem 0.5rem; font-size:0.82rem;">
                       <input type="url" class="form-input consult-row-link" placeholder="Link (e.g. https://meet...)" style="padding:0.4rem 0.5rem; font-size:0.82rem;">
-                      <button type="button" class="btn btn-secondary" style="padding:0.35rem 0.6rem; color:var(--danger); border-color:rgba(239,68,68,0.3); font-size:0.8rem;" onclick="removeConsultRow(this)" title="Remove slot">✕</button>
+                      <button type="button" class="btn btn-secondary" style="padding:0.35rem 0.6rem; color:var(--nm-accent-rose); font-size:0.8rem;" onclick="removeConsultRow(this)" title="Remove slot">✕</button>
                     </div>
                   </div>
                 </div>
@@ -1151,14 +1192,14 @@
 
           <!-- 2. BULK TEXTAREA INPUT -->
           <div id="consultBulkContainer" style="display:none;">
-            <div style="font-weight:700; font-size:0.95rem; color:#fff; margin-bottom:0.4rem;">
+            <div style="font-weight:700; font-size:0.95rem; color:var(--nm-text); margin-bottom:0.4rem;">
               📝 Batch Paste Faculty Consultations
             </div>
-            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; line-height:1.4;">
+            <p style="font-size:0.8rem; color:var(--nm-text-muted); margin-bottom:0.5rem; line-height:1.4;">
               Paste multi-line entries (one per line). Format:<br>
-              <code style="color:var(--accent);">Initial, Faculty Name, Day, Start Time, End Time, Room</code>
+              <code style="color:var(--nm-accent-blue);">Initial, Faculty Name, Day, Start Time, End Time, Room</code>
             </p>
-            <textarea id="consultBulkText" class="form-input" rows="6" style="font-family:var(--font-mono); font-size:0.85rem; padding:0.6rem; width:100%; margin-bottom:0.6rem;" placeholder="MSI, Dr. Muhammad S. Islam, Sunday, 10:00 AM, 11:30 AM, UB0802&#10;MSI, Dr. Muhammad S. Islam, Tuesday, 02:00 PM, 03:30 PM, UB0802&#10;AAN, Abdullah An-Noor, Monday, 11:00 AM, 01:00 PM, UB0704"></textarea>
+            <textarea id="consultBulkText" class="form-input" rows="6" style="font-family:'JetBrains Mono', monospace; font-size:0.85rem; padding:0.6rem; width:100%; margin-bottom:0.6rem;" placeholder="MSI, Dr. Muhammad S. Islam, Sunday, 10:00 AM, 11:30 AM, UB0802&#10;MSI, Dr. Muhammad S. Islam, Tuesday, 02:00 PM, 03:30 PM, UB0802&#10;AAN, Abdullah An-Noor, Monday, 11:00 AM, 01:00 PM, UB0704"></textarea>
             <button type="button" id="btnSaveBulkConsultation" class="btn" style="justify-content:center; padding:0.6rem; width:100%;" onclick="handleSaveBulkConsultation()">
               ⚡ Batch Import Consultation Slots
             </button>
@@ -1167,13 +1208,13 @@
       </div>
 
       <!-- Import Feedback Card -->
-      <div id="importFeedbackCard" style="display:none; background:var(--card-bg); border:1px solid var(--success); border-radius:16px; padding:1.5rem 2rem;">
+      <div id="importFeedbackCard" style="display:none; background:var(--nm-surface); box-shadow:var(--nm-extruded); border-radius:20px; border:1px solid var(--nm-border-light); padding:1.5rem 2rem;">
         <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
           <span style="font-size:1.5rem;">🎉</span>
-          <h3 id="importFeedbackTitle" style="font-size:1.15rem; font-weight:700; color:var(--success);">Schedule Ingested Successfully!</h3>
+          <h3 id="importFeedbackTitle" style="font-size:1.15rem; font-weight:700; color:var(--nm-accent-green);">Schedule Ingested Successfully!</h3>
         </div>
-        <p id="importFeedbackMsg" style="color:var(--text); font-size:0.9rem; line-height:1.6; margin-bottom:1rem;"></p>
-        <div id="importFeedbackDetails" style="font-size:0.85rem; color:var(--text-muted); background:rgba(31, 41, 55, 0.5); padding:1rem; border-radius:10px; font-family:var(--font-mono);"></div>
+        <p id="importFeedbackMsg" style="color:var(--nm-text); font-size:0.9rem; line-height:1.6; margin-bottom:1rem;"></p>
+        <div id="importFeedbackDetails" style="font-size:0.85rem; color:var(--nm-text-muted); background:var(--nm-surface); box-shadow:var(--nm-inset-sm); padding:1rem; border-radius:12px; font-family:'JetBrains Mono', monospace; white-space:pre-wrap;"></div>
       </div>
     </div>
 
@@ -1200,10 +1241,10 @@
     <div id="tab-settings" class="tab-content">
       <div class="settings-container" style="max-width:800px; display:flex; flex-direction:column; gap:1.5rem;">
         <!-- Discord Notification Settings -->
-        <div class="settings-card" style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:16px; padding:2rem;">
+        <div class="settings-card" style="background:var(--nm-surface); border-radius:24px; box-shadow:var(--nm-extruded-lg); border:1px solid var(--nm-border-light); padding:2rem;">
           <div class="settings-card-header" style="margin-bottom:1.5rem;">
-            <h3 class="settings-card-title" style="font-size:1.15rem; font-weight:700; margin-bottom:0.3rem;">🤖 Discord DM Notification Profile</h3>
-            <p class="settings-card-desc" style="color:var(--text-muted); font-size:0.875rem;">Configure your Discord account so FRIDAY can deliver personalized class routines and exam alarms directly to your DMs.</p>
+            <h3 class="settings-card-title" style="font-size:1.15rem; font-weight:700; margin-bottom:0.3rem; color:var(--nm-text);">🤖 Discord DM Notification Profile</h3>
+            <p class="settings-card-desc" style="color:var(--nm-text-muted); font-size:0.875rem;">Configure your Discord account so FRIDAY can deliver personalized class routines and exam alarms directly to your DMs.</p>
           </div>
           <form id="settingsForm" onsubmit="handleSaveSettings(event)">
             <div class="form-group">
@@ -1212,13 +1253,13 @@
             </div>
             <div class="form-group">
               <label class="form-label">Discord User ID (Snowflake)</label>
-              <input type="text" id="settingDiscordUserId" class="form-input" placeholder="e.g. 1328051283080380559" style="font-family:var(--font-mono);" required>
-              <span style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">Right-click your profile in Discord with Developer Mode enabled and click "Copy User ID".</span>
+              <input type="text" id="settingDiscordUserId" class="form-input" placeholder="e.g. 1328051283080380559" style="font-family:'JetBrains Mono', monospace;" required>
+              <span style="font-size:0.75rem; color:var(--nm-text-muted); margin-top:0.25rem;">Right-click your profile in Discord with Developer Mode enabled and click "Copy User ID".</span>
             </div>
             <div class="form-group">
               <label class="form-label">Dashboard Protection Passcode</label>
               <input type="password" id="settingPasscode" class="form-input" placeholder="Leave empty to keep dashboard unlocked">
-              <span style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">Optional security gate. Leave empty to disable passcode protection.</span>
+              <span style="font-size:0.75rem; color:var(--nm-text-muted); margin-top:0.25rem;">Optional security gate. Leave empty to disable passcode protection.</span>
             </div>
             <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
               <button type="submit" class="btn">Save Profile Settings</button>
@@ -1232,7 +1273,7 @@
   <!-- ADD / EDIT DEADLINE MODAL -->
   <div id="eventModal" class="modal-overlay">
     <div class="modal-box">
-      <h3 id="eventModalTitle" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem;">Add Academic Deadline</h3>
+      <h3 id="eventModalTitle" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem; color:var(--nm-text);">Add Academic Deadline</h3>
       <form id="eventForm" onsubmit="handleSaveEvent(event)">
         <input type="hidden" id="editingEventId" value="">
         <div class="form-group">
@@ -1273,13 +1314,13 @@
   <!-- EDIT CONSULTATION MODAL -->
   <div id="editConsultationModal" class="modal-overlay">
     <div class="modal-box">
-      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem;">✏️ Edit Faculty Consultation Slot</h3>
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem; color:var(--nm-text);">✏️ Edit Faculty Consultation Slot</h3>
       <form id="editConsultationForm" onsubmit="handleUpdateConsultation(event)">
         <input type="hidden" id="editConsultId" value="">
         <div style="display:grid; grid-template-columns:1fr 1.6fr; gap:0.75rem; margin-bottom:1rem;">
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Faculty Initial *</label>
-            <input type="text" class="form-input" id="editConsultInitial" required placeholder="e.g. MSI" style="font-family:var(--font-mono); text-transform:uppercase;">
+            <input type="text" class="form-input" id="editConsultInitial" required placeholder="e.g. MSI" style="font-family:'JetBrains Mono', monospace; text-transform:uppercase;">
           </div>
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Faculty Name</label>
@@ -1326,7 +1367,7 @@
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
-          <button type="button" class="btn btn-secondary" style="color:var(--danger); border-color:rgba(239,68,68,0.3);" onclick="handleDeleteConsultationFromModal()">🗑️ Delete Slot</button>
+          <button type="button" class="btn btn-secondary" style="color:var(--nm-accent-rose);" onclick="handleDeleteConsultationFromModal()">🗑️ Delete Slot</button>
           <div style="display:flex; gap:0.75rem;">
             <button type="button" class="btn btn-secondary" onclick="closeEditConsultationModal()">Cancel</button>
             <button type="submit" class="btn" id="editConsultSubmitBtn">Save Changes</button>
@@ -1340,6 +1381,13 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
+    // Global fetch patch to enforce credentials: 'same-origin' across all AJAX calls
+    const _nativeFetch = window.fetch;
+    window.fetch = function(url, options = {}) {
+      const opts = Object.assign({ credentials: 'same-origin' }, options);
+      return _nativeFetch.call(this, url, opts);
+    };
+
     let activeUserId = parseInt(localStorage.getItem('friday_active_user_id') || '1', 10);
     let cachedCourses = [];
     let cachedEvents = [];
@@ -1425,7 +1473,7 @@
       document.getElementById('eventModal').classList.remove('active');
     }
 
-    // Security Gate check
+    // Security Gate check (uses localStorage for multi-tab persistence across browser sessions)
     async function checkAuthGate() {
       try {
         const res = await fetch(`/api/settings?user_id=${activeUserId}`);
@@ -1435,7 +1483,7 @@
         }
         const json = await res.json();
         if (json.success && json.data.has_passcode) {
-          const isAuthed = sessionStorage.getItem('friday_authenticated') === '1';
+          const isAuthed = localStorage.getItem('friday_authenticated') === '1';
           if (!isAuthed) {
             document.getElementById('lockGate').classList.add('active');
             return false;
@@ -1461,7 +1509,7 @@
         });
         const json = await res.json();
         if (json.success && json.verified) {
-          sessionStorage.setItem('friday_authenticated', '1');
+          localStorage.setItem('friday_authenticated', '1');
           document.getElementById('lockGate').classList.remove('active');
           loadDashboard();
         } else {
@@ -1487,6 +1535,7 @@
           const meJson = await meRes.json();
           if (meJson.authenticated && meJson.user?.id) {
             activeUserId = meJson.user.id;
+            localStorage.setItem('friday_active_user_id', String(activeUserId));
           }
         }
       } catch {}
@@ -1618,12 +1667,10 @@
           const pill = document.getElementById('statusPill');
           const text = document.getElementById('statusText');
           if (d.botConfigured) {
-            pill.style.background = 'rgba(16, 185, 129, 0.1)';
-            pill.style.color = '#10b981';
+            pill.style.color = 'var(--nm-accent-green)';
             text.textContent = 'Discord Active';
           } else {
-            pill.style.background = 'rgba(245, 158, 11, 0.1)';
-            pill.style.color = '#f59e0b';
+            pill.style.color = 'var(--nm-accent-amber)';
             text.textContent = 'Configure Discord';
           }
         }
@@ -1649,54 +1696,6 @@
       }
     }
 
-    async function loadRoutine() {
-      try {
-        const res = await fetch(`/api/routine?user_id=${activeUserId}`);
-        const json = await res.json();
-        if (json.success) {
-          const grid = document.getElementById('timetableGrid');
-          grid.innerHTML = '';
-          const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY'];
-          const todayStr = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Dhaka', weekday: 'long' }).format(new Date()).toUpperCase();
-
-          days.forEach(day => {
-            const slots = json.data.grouped[day] || [];
-            const isToday = day === todayStr;
-
-            let slotsHtml = '';
-            if (slots.length === 0) {
-              slotsHtml = `<div class="no-classes">No scheduled classes</div>`;
-            } else {
-              slots.forEach(s => {
-                slotsHtml += `
-                  <div class="slot-card">
-                    <div class="slot-time">${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}</div>
-                    <div class="slot-code">${s.code} <span style="font-size:0.8rem; font-weight:600; color:var(--text-muted);">(Sec ${s.section})</span>${s.type === 'LAB' ? ' <span style="font-size:0.7rem; font-weight:700; background:rgba(6,182,212,0.2); color:#06b6d4; padding:0.1rem 0.35rem; border-radius:3px;">LAB</span>' : ''}</div>
-                    <div class="slot-meta">
-                      <div class="meta-row"><span>📍 Room:</span> <strong style="color:#fff;">${s.room || 'TBA'}</strong></div>
-                      <div class="meta-row"><span>👨‍🏫 Faculty:</span> <span>${s.faculty || 'N/A'}</span></div>
-                    </div>
-                  </div>
-                `;
-              });
-            }
-
-            grid.innerHTML += `
-              <div class="day-column">
-                <div class="day-header ${isToday ? 'today' : ''}">
-                  <span>${day}</span>
-                  ${isToday ? '<span style="font-size:0.7rem; font-weight:800; background:#6366f1; color:#fff; padding:0.15rem 0.45rem; border-radius:4px;">TODAY</span>' : ''}
-                </div>
-                <div class="day-slots">${slotsHtml}</div>
-              </div>
-            `;
-          });
-        }
-      } catch (err) {
-        console.error('Failed to load routine:', err);
-      }
-    }
-
     // Helper: Returns YYYY-MM-DD for a date in Asia/Dhaka (+06:00)
     function getDhakaDateString(dateObjOrIso) {
       const d = new Date(dateObjOrIso);
@@ -1708,6 +1707,66 @@
       }).format(d);
     }
 
+    // TIMETABLE RENDERING (NEUMORPHIC RULES: Class vs Lab, Pill Badges, 7-day support)
+    async function loadRoutine() {
+      try {
+        const res = await fetch(`/api/routine?user_id=${activeUserId}`);
+        const json = await res.json();
+        if (json.success && json.data) {
+          const grid = document.getElementById('timetableGrid');
+          grid.innerHTML = '';
+          const defaultDays = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY'];
+          const allDays = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+          const days = allDays.filter(d => defaultDays.includes(d) || (json.data.grouped && json.data.grouped[d] && json.data.grouped[d].length > 0));
+          const todayStr = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Dhaka', weekday: 'long' }).format(new Date()).toUpperCase();
+
+          days.forEach(day => {
+            const slots = (json.data.grouped && json.data.grouped[day]) || [];
+            const isToday = day === todayStr;
+
+            let slotsHtml = '';
+            if (slots.length === 0) {
+              slotsHtml = `<div class="no-classes">No scheduled classes</div>`;
+            } else {
+              slots.forEach(s => {
+                const isLab = s.type === 'LAB' || (s.code && s.code.endsWith('L')) || (s.room && s.room.endsWith('L'));
+                const cardClass = isLab ? 'slot-card slot-card-lab' : 'slot-card slot-card-theory';
+                const badgeClass = isLab ? 'slot-badge-lab' : 'slot-badge-class';
+                const badgeText = isLab ? '[LAB]' : '[CLASS]';
+
+                slotsHtml += `
+                  <div class="${cardClass}">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                      <div class="slot-time">${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}</div>
+                      <span class="${badgeClass}">${badgeText}</span>
+                    </div>
+                    <div class="slot-code">${s.code} <span style="font-size:0.8rem; font-weight:600; color:var(--nm-text-muted);">(Sec ${s.section})</span></div>
+                    <div class="slot-meta">
+                      <div class="meta-row"><span>📍 Room:</span> <strong style="color:var(--nm-text);">${s.room || 'TBA'}</strong></div>
+                      <div class="meta-row"><span>👨‍🏫 Faculty:</span> <span>${s.faculty || 'N/A'}</span></div>
+                    </div>
+                  </div>
+                `;
+              });
+            }
+
+            grid.innerHTML += `
+              <div class="day-column">
+                <div class="day-header ${isToday ? 'today' : ''}">
+                  <span class="day-pill">${day}</span>
+                  ${isToday ? '<span class="today-pill">TODAY</span>' : ''}
+                </div>
+                <div class="day-slots">${slotsHtml}</div>
+              </div>
+            `;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load routine:', err);
+      }
+    }
+
+    // EXAM LIST RENDERING (NEUMORPHIC RULES: Inset container with extruded rows & colored pill badges)
     async function loadEvents() {
       try {
         const res = await fetch(`/api/events?user_id=${activeUserId}`);
@@ -1726,47 +1785,49 @@
           const todayMidnight = new Date(`${todayStr}T00:00:00+06:00`).getTime();
 
           json.data.forEach(ev => {
-            const eventDateStr = getDhakaDateString(ev.start_time);
+            const eventDateStr = getDhakaDateString(ev.start_time || ev.event_time);
             const eventMidnight = new Date(`${eventDateStr}T00:00:00+06:00`).getTime();
             const diffDays = Math.round((eventMidnight - todayMidnight) / 86400000);
 
             let countdownText = '';
-            let badgeStyle = '';
+            let countdownStyle = '';
             if (diffDays === 0) {
               countdownText = 'Today';
-              badgeStyle = 'background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-weight: 700;';
+              countdownStyle = 'color: var(--nm-accent-green); font-weight: 700;';
             } else if (diffDays === 1) {
               countdownText = 'Tomorrow';
-              badgeStyle = 'background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 700;';
+              countdownStyle = 'color: var(--nm-accent-amber); font-weight: 700;';
             } else if (diffDays > 1) {
               countdownText = `in ${diffDays} days`;
-              badgeStyle = 'color: var(--accent);';
+              countdownStyle = 'color: var(--nm-accent-blue);';
             } else if (diffDays === -1) {
               countdownText = 'Yesterday';
-              badgeStyle = 'color: var(--text-muted); opacity: 0.7;';
+              countdownStyle = 'color: var(--nm-text-muted); opacity: 0.8;';
             } else {
               countdownText = `${Math.abs(diffDays)} days ago`;
-              badgeStyle = 'color: var(--text-muted); opacity: 0.7;';
+              countdownStyle = 'color: var(--nm-text-muted); opacity: 0.8;';
             }
 
+            const evType = (ev.event_type || ev.type || 'DEADLINE').toUpperCase();
             let badgeClass = 'badge-assignment';
-            if (ev.type === 'MIDTERM') badgeClass = 'badge-midterm';
-            else if (ev.type === 'FINAL') badgeClass = 'badge-final';
-            else if (ev.type === 'QUIZ') badgeClass = 'badge-quiz';
+            if (evType === 'MIDTERM' || evType === 'MID') badgeClass = 'badge-midterm';
+            else if (evType === 'FINAL') badgeClass = 'badge-final';
+            else if (evType === 'QUIZ') badgeClass = 'badge-quiz';
 
-            const dateFmt = new Date(ev.start_time).toLocaleDateString('en-GB', {
+            const timeRaw = ev.start_time || ev.event_time;
+            const dateFmt = timeRaw ? new Date(timeRaw).toLocaleDateString('en-GB', {
               timeZone: 'Asia/Dhaka',
               weekday: 'short',
               day: '2-digit',
               month: 'short',
               year: 'numeric'
-            });
-            const timeFmt = new Date(ev.start_time).toLocaleTimeString('en-GB', {
+            }) : 'TBA';
+            const timeFmt = timeRaw ? new Date(timeRaw).toLocaleTimeString('en-GB', {
               timeZone: 'Asia/Dhaka',
               hour: '2-digit',
               minute: '2-digit',
               hour12: true
-            });
+            }) : 'TBA';
 
             // Action buttons for custom tasks
             const actionButtons = ev.is_custom ? `
@@ -1792,7 +1853,7 @@
             list.innerHTML += `
               <div class="event-card">
                 <div class="event-info">
-                  <span class="event-badge ${badgeClass}">${ev.type}</span>
+                  <span class="event-badge ${badgeClass}">${evType}</span>
                   <div>
                     <div class="event-title">${ev.title}</div>
                     <div class="event-sub">
@@ -1803,7 +1864,7 @@
                   </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.75rem;">
-                  <span class="countdown-badge" style="${badgeStyle}">${countdownText}</span>
+                  <span class="countdown-badge" style="${countdownStyle}">${countdownText}</span>
                   ${actionButtons}
                 </div>
               </div>
@@ -1823,7 +1884,7 @@
           const tbody = document.getElementById('logsTableBody');
           tbody.innerHTML = '';
           if (json.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:2rem;">No notifications dispatched yet.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--nm-text-muted); padding:2.5rem;">No notifications dispatched yet.</td></tr>';
             return;
           }
 
@@ -1841,8 +1902,8 @@
             tbody.innerHTML += `
               <tr>
                 <td><span class="log-badge ${isSent ? 'log-sent' : 'log-failed'}">${log.status}</span></td>
-                <td><strong>${log.label}</strong></td>
-                <td><code style="color:var(--accent); font-family:var(--font-mono);">${log.notificationType}</code></td>
+                <td><strong style="color:var(--nm-text);">${log.label}</strong></td>
+                <td><code style="color:var(--nm-accent-blue); font-family:'JetBrains Mono', monospace;">${log.notificationType}</code></td>
                 <td>${dateStr} BST</td>
               </tr>
             `;
@@ -1987,7 +2048,7 @@
     }
 
     // ==========================================
-    // INGESTION PORTAL LOGIC (PHASE 5)
+    // INGESTION PORTAL LOGIC
     // ==========================================
     const dropZone = document.getElementById('fileDropZone');
 
@@ -2047,7 +2108,7 @@
         selectedFileContent = null;
         uploadBtn.disabled = false;
         showToast(`Loaded PDF: ${file.name}`);
-        return; // Prevent FileReader from attempting JSON.parse on PDF files
+        return;
       }
 
       // JSON parsing flow
@@ -2086,15 +2147,12 @@
       try {
         if (selectedFileType === 'pdf') {
           const formData = new FormData();
-          // Provide both 'routine' and 'file' fieldnames for defensive multer compatibility
           formData.append('routine', selectedRawFile);
           formData.append('file', selectedRawFile);
 
-          // Note: DO NOT pass 'Content-Type' header so browser automatically sets boundary
           const res = await fetch('/api/schedule/upload-pdf', {
             method: 'POST',
-            body: formData,
-            credentials: 'same-origin'
+            body: formData
           });
 
           const contentType = res.headers.get('content-type') || '';
@@ -2235,24 +2293,24 @@
           const facultyEmail = json.data.find(s => s.contact_email)?.contact_email || '';
 
           container.innerHTML = `
-            <div style="margin-bottom:0.6rem; padding-bottom:0.4rem; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
+            <div style="margin-bottom:0.6rem; padding-bottom:0.4rem; border-bottom:1px solid rgba(190,200,212,0.4); display:flex; justify-content:space-between; align-items:center;">
               <div>
-                <strong style="color:var(--accent); font-size:1rem;">${initial}</strong>
-                ${facultyName ? `<span style="color:#fff; font-size:0.9rem; margin-left:0.4rem;">${facultyName}</span>` : ''}
+                <strong style="color:var(--nm-accent-blue); font-size:1rem;">${initial}</strong>
+                ${facultyName ? `<span style="color:var(--nm-text); font-size:0.9rem; margin-left:0.4rem;">${facultyName}</span>` : ''}
               </div>
-              ${facultyEmail ? `<span style="font-size:0.78rem; color:var(--text-muted); font-family:var(--font-mono);">${facultyEmail}</span>` : ''}
+              ${facultyEmail ? `<span style="font-size:0.78rem; color:var(--nm-text-muted); font-family:'JetBrains Mono', monospace;">${facultyEmail}</span>` : ''}
             </div>
-            <div style="display:flex; flex-direction:column; gap:0.4rem;">
+            <div style="display:flex; flex-direction:column; gap:0.5rem;">
               ${json.data.map(slot => `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(31, 41, 55, 0.6); padding:0.45rem 0.65rem; border-radius:8px; font-size:0.85rem; gap:0.5rem; flex-wrap:wrap;">
+                <div style="display:flex; justify-content:space-between; align-items:center; background:var(--nm-surface); box-shadow:var(--nm-extruded-sm); padding:0.55rem 0.75rem; border-radius:10px; font-size:0.85rem; gap:0.5rem; flex-wrap:wrap;">
                   <div>
-                    <span style="font-weight:700; color:#fff;">${slot.day_of_week}</span>
-                    <span style="color:var(--text-muted); margin-left:0.4rem;">${slot.start_time.substring(0,5)} - ${slot.end_time.substring(0,5)}</span>
+                    <span style="font-weight:700; color:var(--nm-text);">${slot.day_of_week}</span>
+                    <span style="color:var(--nm-text-muted); margin-left:0.4rem;">${slot.start_time.substring(0,5)} - ${slot.end_time.substring(0,5)}</span>
                   </div>
                   <div style="display:flex; gap:0.4rem; align-items:center;">
-                    ${slot.room ? `<span style="background:rgba(99, 102, 241, 0.2); color:var(--accent); padding:0.15rem 0.45rem; border-radius:6px; font-size:0.78rem;">📍 ${slot.room}</span>` : ''}
-                    ${slot.consultation_link ? `<a href="${slot.consultation_link}" target="_blank" style="color:var(--success); font-size:0.78rem; text-decoration:none;">🔗 Join Link</a>` : ''}
-                    <button type="button" class="btn-action" style="padding:0.2rem 0.55rem; font-size:0.75rem; border-radius:6px; border:1px solid rgba(99,102,241,0.4); color:var(--accent);" onclick="openEditConsultationModal(${slot.id})" title="Edit Slot">✏️ Edit</button>
+                    ${slot.room ? `<span style="box-shadow:var(--nm-inset-sm); color:var(--nm-accent-blue); padding:0.2rem 0.5rem; border-radius:9999px; font-size:0.75rem; font-weight:700;">📍 ${slot.room}</span>` : ''}
+                    ${slot.consultation_link ? `<a href="${slot.consultation_link}" target="_blank" style="color:var(--nm-accent-green); font-size:0.78rem; text-decoration:none; font-weight:600;">🔗 Join Link</a>` : ''}
+                    <button type="button" class="btn-action" style="padding:0.2rem 0.55rem; font-size:0.75rem; color:var(--nm-accent-blue);" onclick="openEditConsultationModal(${slot.id})" title="Edit Slot">✏️ Edit</button>
                   </div>
                 </div>
               `).join('')}
@@ -2262,7 +2320,7 @@
         } else {
           window.lastConsultationSlots = [];
           container.innerHTML = `
-            <div style="text-align:center; padding:0.75rem; color:var(--text-muted); font-size:0.85rem;">
+            <div style="text-align:center; padding:0.75rem; color:var(--nm-text-muted); font-size:0.85rem;">
               🔍 No consultation hours registered for <strong>${initial}</strong> yet.<br>
               <span style="font-size:0.78rem;">Use the form below to add their consultation schedule!</span>
             </div>
@@ -2380,17 +2438,17 @@
       if (mode === 'bulk') {
         formEl.style.display = 'none';
         bulkEl.style.display = 'block';
-        btnBulk.style.borderColor = 'var(--primary)';
-        btnBulk.style.background = 'rgba(99,102,241,0.2)';
-        btnForm.style.borderColor = 'var(--card-border)';
-        btnForm.style.background = 'transparent';
+        btnBulk.style.boxShadow = 'var(--nm-inset-sm)';
+        btnBulk.style.color = 'var(--nm-accent-blue)';
+        btnForm.style.boxShadow = 'var(--nm-extruded-sm)';
+        btnForm.style.color = 'var(--nm-text)';
       } else {
         formEl.style.display = 'block';
         bulkEl.style.display = 'none';
-        btnForm.style.borderColor = 'var(--primary)';
-        btnForm.style.background = 'rgba(99,102,241,0.2)';
-        btnBulk.style.borderColor = 'var(--card-border)';
-        btnBulk.style.background = 'transparent';
+        btnForm.style.boxShadow = 'var(--nm-inset-sm)';
+        btnForm.style.color = 'var(--nm-accent-blue)';
+        btnBulk.style.boxShadow = 'var(--nm-extruded-sm)';
+        btnBulk.style.color = 'var(--nm-text)';
       }
     }
 
@@ -2398,7 +2456,7 @@
       const container = document.getElementById('consultSlotRows');
       const row = document.createElement('div');
       row.className = 'consult-slot-row';
-      row.style = 'background:rgba(31, 41, 55, 0.45); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.6rem; display:flex; flex-direction:column; gap:0.45rem;';
+      row.style = 'background:var(--nm-surface); box-shadow:var(--nm-inset-sm); border-radius:12px; padding:0.65rem; display:flex; flex-direction:column; gap:0.45rem;';
       row.innerHTML = `
         <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.5rem;">
           <div>
@@ -2422,7 +2480,7 @@
         <div style="display:grid; grid-template-columns:1fr 1.3fr auto; gap:0.5rem; align-items:center;">
           <input type="text" class="form-input consult-row-room" placeholder="Room (e.g. UB0821)" style="padding:0.4rem 0.5rem; font-size:0.82rem;">
           <input type="url" class="form-input consult-row-link" placeholder="Link (e.g. https://meet...)" style="padding:0.4rem 0.5rem; font-size:0.82rem;">
-          <button type="button" class="btn btn-secondary" style="padding:0.35rem 0.6rem; color:var(--danger); border-color:rgba(239,68,68,0.3); font-size:0.8rem;" onclick="removeConsultRow(this)" title="Remove slot">✕</button>
+          <button type="button" class="btn btn-secondary" style="padding:0.35rem 0.6rem; color:var(--nm-accent-rose); font-size:0.8rem;" onclick="removeConsultRow(this)" title="Remove slot">✕</button>
         </div>
       `;
       container.appendChild(row);
@@ -2543,6 +2601,7 @@
       try {
         await fetch('/api/auth/logout', { method: 'POST' });
       } catch {}
+      localStorage.removeItem('friday_authenticated');
       window.location.href = '/login';
     }
 
@@ -2554,9 +2613,33 @@
       }
     }
 
+    // DOMContentLoaded: Authenticate and render dashboard directly
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/users');
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            const current = json.data.find(u => u.id === activeUserId) || json.data[0];
+            if (current) {
+              activeUserId = current.id;
+              localStorage.setItem('friday_active_user_id', String(activeUserId));
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Initial session check error:', err);
+      }
+
+      loadDashboard();
+    });
+
     // Auto-refresh every 30s
     setInterval(loadDashboard, 30000);
-    loadDashboard();
   </script>
 </body>
 </html>

@@ -271,9 +271,9 @@ export function requireAuth(req, res, next) {
   }
 
   const db = getDb();
-  const sessionUser = req.signedCookies?.friday_session || req.cookies?.friday_session;
+  const sessionUserId = req.signedCookies?.friday_session || req.cookies?.friday_session;
 
-  if (!sessionUser && !req.authenticatedUser) {
+  if (!sessionUserId && !req.authenticatedUser) {
     if (isApiRoute) {
       if (process.env.NODE_ENV === 'test' && !req.headers['x-enforce-auth'] && !originalUrl.includes('upload-pdf')) {
         req.userId = getRequestUserId(req, db);
@@ -292,8 +292,8 @@ export function requireAuth(req, res, next) {
 
   // Resolve user
   let user = req.authenticatedUser || getSessionUser(req, db);
-  if (!user && sessionUser) {
-    const parsedId = parseInt(sessionUser, 10);
+  if (!user && sessionUserId) {
+    const parsedId = parseInt(sessionUserId, 10);
     if (!isNaN(parsedId)) {
       user = db.prepare('SELECT id, discord_user_id, username, pairing_code FROM users WHERE id = ?').get(parsedId);
     }
@@ -323,6 +323,7 @@ export function requireAuth(req, res, next) {
 
 export function createServer() {
   const app = express();
+  app.set('trust proxy', 1);
 
   // Ultra-lightweight keepalive ping (must be first, supports GET and HEAD)
   app.all('/ping', (req, res) => {
@@ -346,8 +347,8 @@ export function createServer() {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-  const COOKIE_SECRET = process.env.COOKIE_SECRET || process.env.SESSION_SECRET || 'friday-secure-academic-bot-secret-key-2026';
-  app.use(cookieParser(COOKIE_SECRET));
+  const SESSION_SECRET = process.env.SESSION_SECRET || 'friday-persistent-session-secret-salt-2026';
+  app.use(cookieParser(SESSION_SECRET));
 
   // Attach session user to req if present
   app.use((req, res, next) => {
@@ -473,7 +474,7 @@ export function createServer() {
         db.prepare('DELETE FROM sessions WHERE user_id = ?').run(req.authenticatedUser.id);
       }
       res.clearCookie('friday_session', { path: '/' });
-      res.json({ success: true, message: 'Logged out successfully.' });
+      return res.json({ success: true, message: 'Logged out successfully' });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
