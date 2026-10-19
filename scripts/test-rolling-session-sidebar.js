@@ -48,6 +48,7 @@ console.log('====================================================\n');
 
 const serverSource = fs.readFileSync(path.join(ROOT_DIR, 'src', 'server.js'), 'utf8');
 const indexHtml = fs.readFileSync(path.join(ROOT_DIR, 'public', 'index.html'), 'utf8');
+const loginHtml = fs.readFileSync(path.join(ROOT_DIR, 'public', 'login.html'), 'utf8');
 
 // GROUP 1: Server Session & Rolling Inactivity (src/server.js)
 console.log('--- TEST GROUP 1: Rolling Inactivity Session in src/server.js ---');
@@ -195,6 +196,34 @@ it('handles 401 session expiration by clearing sessionStorage and redirecting to
 
 it('enforces credentials: same-origin across fetch calls', () => {
   assert.ok(indexHtml.includes("credentials: 'same-origin'"));
+});
+
+it('matches UI/UX design in public/login.html with Neumorphic system and Jet Black Dark Mode', () => {
+  // Light Mode tokens
+  assert.ok(loginHtml.includes('--nm-bg: #e2e8f0;'));
+  assert.ok(loginHtml.includes('--nm-surface: #e2e8f0;'));
+  assert.ok(loginHtml.includes('--nm-text-primary: #1e293b;'));
+
+  // Exact Jet Black Dark Mode tokens
+  assert.ok(loginHtml.includes('body.dark-mode'));
+  assert.ok(loginHtml.includes('--nm-bg: #000000;'));
+  assert.ok(loginHtml.includes('--nm-surface: #0a0a0c;'));
+  assert.ok(loginHtml.includes('--nm-text-primary: #f8fafc;'));
+
+  // Neumorphic component styles
+  assert.ok(loginHtml.includes('.login-card'));
+  assert.ok(loginHtml.includes('var(--nm-shadow-out)'));
+  assert.ok(loginHtml.includes('.code-input'));
+  assert.ok(loginHtml.includes('var(--nm-shadow-in)'));
+  assert.ok(loginHtml.includes('.btn-login'));
+  assert.ok(loginHtml.includes('var(--nm-shadow-out-sm)'));
+
+  // Theme switcher controls and synchronization
+  assert.ok(loginHtml.includes('themeToggleBtn'));
+  assert.ok(loginHtml.includes('themeIcon'));
+  assert.ok(loginHtml.includes('themeLabel'));
+  assert.ok(loginHtml.includes('friday_theme'));
+  assert.ok(loginHtml.includes("credentials: 'same-origin'"));
 });
 
 // GROUP 4: Live HTTP Rolling Session Renewal Test
