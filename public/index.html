@@ -533,6 +533,131 @@
       flex: 1;
       width: calc(100% - 260px);
       max-width: calc(100% - 260px);
+      transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* TOGGLE VIEW BUTTONS */
+    .sidebar-toggle-btn {
+      background: var(--nm-surface);
+      border: 1px solid var(--nm-border);
+      box-shadow: var(--nm-shadow-out-sm);
+      border-radius: 10px;
+      padding: 0.45rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--nm-text-secondary);
+      transition: all 0.2s ease;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-toggle-btn:hover {
+      color: var(--nm-accent-blue);
+      box-shadow: var(--nm-shadow-out);
+    }
+
+    .sidebar-toggle-btn:active {
+      box-shadow: var(--nm-shadow-in-sm);
+    }
+
+    .topbar-toggle-btn {
+      background: var(--nm-surface);
+      border: 1px solid var(--nm-border);
+      box-shadow: var(--nm-shadow-out-sm);
+      border-radius: 12px;
+      padding: 0.45rem 0.75rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--nm-text-primary);
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+      font-size: 0.82rem;
+      font-weight: 700;
+      font-family: inherit;
+    }
+
+    .topbar-toggle-btn:hover {
+      color: var(--nm-accent-blue);
+      box-shadow: var(--nm-shadow-out);
+    }
+
+    .topbar-toggle-btn:active {
+      box-shadow: var(--nm-shadow-in-sm);
+    }
+
+    /* DEFAULT ICON-ONLY SIDEBAR (Left options bar hidden, only icons visible) */
+    body:not(.sidebar-expanded) aside.nm-sidebar {
+      width: 72px;
+      padding: 1.5rem 0.5rem;
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+    }
+
+    body:not(.sidebar-expanded) aside.nm-sidebar .brand-meta,
+    body:not(.sidebar-expanded) aside.nm-sidebar .nav-label,
+    body:not(.sidebar-expanded) aside.nm-sidebar .sidebar-toggle-btn {
+      display: none !important;
+      opacity: 0 !important;
+    }
+
+    body:not(.sidebar-expanded) aside.nm-sidebar .sidebar-brand {
+      justify-content: center;
+      padding: 0.25rem 0 1.25rem;
+      gap: 0;
+    }
+
+    body:not(.sidebar-expanded) aside.nm-sidebar .nav-item {
+      justify-content: center;
+      padding: 0.75rem 0;
+      gap: 0;
+    }
+
+    body:not(.sidebar-expanded) main.nm-main-content {
+      margin-left: 72px;
+      width: calc(100% - 72px);
+      max-width: calc(100% - 72px);
+    }
+
+    /* EXPANDED SIDEBAR (When Toggle View is clicked) */
+    body.sidebar-expanded aside.nm-sidebar {
+      width: 260px;
+      padding: 1.5rem 1rem;
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+    }
+
+    body.sidebar-expanded aside.nm-sidebar .brand-meta {
+      display: flex !important;
+      opacity: 1 !important;
+    }
+
+    body.sidebar-expanded aside.nm-sidebar .nav-label {
+      display: inline-block !important;
+      opacity: 1 !important;
+    }
+
+    body.sidebar-expanded aside.nm-sidebar .sidebar-toggle-btn {
+      display: inline-flex !important;
+    }
+
+    body.sidebar-expanded aside.nm-sidebar .sidebar-brand {
+      justify-content: flex-start;
+      padding: 0.25rem 0.5rem 1.25rem;
+      gap: 0.85rem;
+    }
+
+    body.sidebar-expanded aside.nm-sidebar .nav-item {
+      justify-content: flex-start;
+      padding: 0.75rem 1rem;
+      gap: 0.85rem;
+    }
+
+    body.sidebar-expanded main.nm-main-content {
+      margin-left: 260px;
+      width: calc(100% - 260px);
+      max-width: calc(100% - 260px);
     }
 
     /* Topbar in Main Content */
@@ -1290,6 +1415,297 @@
       from { transform: translateX(100%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
     }
+
+    /* MOBILE BACKDROP OVERLAY */
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 998;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    body.sidebar-mobile-open .sidebar-backdrop {
+      display: block;
+      opacity: 1;
+    }
+
+    /* COMPREHENSIVE RESPONSIVE DESIGN (MOBILE & TABLETS) */
+    @media (max-width: 768px) {
+      body {
+        overflow-x: hidden;
+      }
+
+      aside.nm-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 270px !important;
+        height: 100vh !important;
+        transform: translateX(-100%);
+        z-index: 1000;
+        box-shadow: 8px 0 30px rgba(0, 0, 0, 0.45);
+        padding: 1.5rem 1rem !important;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      }
+
+      body.sidebar-mobile-open aside.nm-sidebar {
+        transform: translateX(0) !important;
+      }
+
+      /* In mobile drawer, display full brand meta & navigation labels */
+      body:not(.sidebar-expanded) aside.nm-sidebar .brand-meta,
+      body:not(.sidebar-expanded) aside.nm-sidebar .nav-label {
+        display: flex !important;
+        opacity: 1 !important;
+      }
+
+      body:not(.sidebar-expanded) aside.nm-sidebar .sidebar-brand {
+        justify-content: flex-start !important;
+        padding: 0.25rem 0.5rem 1.25rem !important;
+        gap: 0.85rem !important;
+      }
+
+      body:not(.sidebar-expanded) aside.nm-sidebar .nav-item {
+        justify-content: flex-start !important;
+        padding: 0.75rem 1rem !important;
+        gap: 0.85rem !important;
+      }
+
+      body:not(.sidebar-expanded) aside.nm-sidebar .nav-item:hover {
+        transform: translateX(6px) !important;
+      }
+
+      main.nm-main-content,
+      body:not(.sidebar-expanded) main.nm-main-content,
+      body.sidebar-expanded main.nm-main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 1rem 0.75rem !important;
+      }
+
+      header.topbar-container {
+        padding: 0.75rem 1rem;
+        border-radius: 18px;
+        margin-bottom: 1.25rem;
+        gap: 0.65rem;
+        position: sticky;
+        top: 0.5rem;
+        z-index: 50;
+      }
+
+      .topbar-left, .topbar-right {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+
+      .topbar-right {
+        border-top: 1px solid var(--nm-border);
+        padding-top: 0.5rem;
+      }
+
+      .next-class-card {
+        padding: 1.25rem 1rem;
+        border-radius: 20px;
+        margin-bottom: 1.25rem;
+      }
+
+      .next-class-header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .next-class-title {
+        font-size: 1.35rem;
+        line-height: 1.3;
+        word-break: break-word;
+      }
+
+      .next-class-subtitle {
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+      }
+
+      .next-class-details {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .nc-detail-pill {
+        width: 100%;
+        font-size: 0.82rem;
+        padding: 0.5rem 0.75rem;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .metric-card {
+        padding: 1rem 0.85rem;
+        border-radius: 18px;
+      }
+
+      .metric-label {
+        font-size: 0.7rem;
+      }
+
+      .metric-value {
+        font-size: 1.5rem;
+      }
+
+      .timetable-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .day-column {
+        padding: 1rem;
+        border-radius: 18px;
+      }
+
+      .events-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+
+      .events-toolbar .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .events-list-inset {
+        padding: 0.75rem;
+        border-radius: 18px;
+      }
+
+      .event-card {
+        padding: 1rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+
+      .event-info {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+
+      .event-sub {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
+      }
+
+      .action-btn-group {
+        width: 100%;
+        justify-content: flex-end;
+        gap: 0.5rem;
+      }
+
+      .import-hero {
+        padding: 1.25rem 1rem;
+        border-radius: 18px;
+        margin-bottom: 1.25rem;
+      }
+
+      .import-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .import-card {
+        padding: 1.25rem 1rem;
+        border-radius: 18px;
+      }
+
+      .drop-zone {
+        padding: 1.75rem 1rem;
+        border-radius: 16px;
+      }
+
+      .consult-grid-faculty,
+      .consult-grid-time,
+      .consult-grid-details {
+        grid-template-columns: 1fr !important;
+      }
+
+      .table-container {
+        border-radius: 18px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      table {
+        min-width: 480px;
+      }
+
+      th, td {
+        padding: 0.75rem 0.85rem;
+        font-size: 0.82rem;
+      }
+
+      .settings-card {
+        padding: 1.25rem 1rem;
+        border-radius: 18px;
+      }
+
+      .modal-box {
+        padding: 1.5rem 1.15rem;
+        border-radius: 20px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .toast-container {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+      }
+
+      .toast {
+        font-size: 0.85rem;
+        padding: 0.75rem 1rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.6rem;
+      }
+
+      .user-select-wrap {
+        max-width: 130px;
+      }
+
+      .last-sync-badge {
+        display: none;
+      }
+
+      .live-clock {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.65rem;
+      }
+
+      .btn {
+        padding: 0.55rem 0.95rem;
+        font-size: 0.82rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1297,7 +1713,12 @@
   <!-- PASSCODE LOCK GATE -->
   <div id="lockGate" class="lock-gate">
     <div class="lock-card">
-      <div class="lock-icon">🔒</div>
+      <div class="lock-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
       <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.4rem; color:var(--nm-text);">FRIDAY Dashboard Protected</h2>
       <p style="color:var(--nm-text-muted); font-size:0.875rem; margin-bottom:1.5rem;">Enter your passcode to access your academic schedule.</p>
       <form onsubmit="handleUnlock(event)">
@@ -1310,22 +1731,30 @@
     </div>
   </div>
 
+  <!-- MOBILE SIDEBAR BACKDROP OVERLAY -->
+  <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
+
   <!-- VERTICAL LEFT SIDEBAR NAVIGATION -->
   <aside class="nm-sidebar">
     <div class="sidebar-top">
       <!-- Brand Header -->
       <div class="sidebar-brand">
-        <div class="brand-badge-icon">F</div>
+        <div class="brand-badge-icon" onclick="toggleSidebarView(event)" style="cursor:pointer;" title="Toggle sidebar view">F</div>
         <div class="brand-meta">
           <div class="brand-name">FRIDAY</div>
           <div class="brand-tag" id="sidebarUserTag">Student #1</div>
         </div>
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebarView(event)" title="Collapse sidebar" aria-label="Collapse sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
       </div>
 
       <!-- Vertical Navigation Links -->
       <nav class="sidebar-nav">
-        <!-- 🏠 Home -->
-        <button class="nav-item active" onclick="switchNav('home', event)" data-nav="home">
+        <!-- Home -->
+        <button class="nav-item active" onclick="switchNav('home', event)" data-nav="home" title="Home">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             <polyline points="9 22 9 12 15 12 15 22"></polyline>
@@ -1333,8 +1762,8 @@
           <span class="nav-label">Home</span>
         </button>
 
-        <!-- 📅 Weekly Timetable -->
-        <button class="nav-item" onclick="switchNav('timetable', event)" data-nav="timetable">
+        <!-- Weekly Timetable -->
+        <button class="nav-item" onclick="switchNav('timetable', event)" data-nav="timetable" title="Weekly Timetable">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
             <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -1344,18 +1773,18 @@
           <span class="nav-label">Weekly Timetable</span>
         </button>
 
-        <!-- 🎯 Academic Deadlines -->
-        <button class="nav-item" onclick="switchNav('deadlines', event)" data-nav="deadlines">
+        <!-- Academic Deadlines -->
+        <button class="nav-item" onclick="switchNav('deadlines', event)" data-nav="deadlines" title="Academic Deadlines">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <circle cx="12" cy="12" r="6"></circle>
-            <circle cx="12" cy="12" r="2"></circle>
+            <circle cx="12" cy="2" r="2"></circle>
           </svg>
           <span class="nav-label">Academic Deadlines</span>
         </button>
 
-        <!-- 📤 Import Routine -->
-        <button class="nav-item" onclick="switchNav('import', event)" data-nav="import">
+        <!-- Import Routine -->
+        <button class="nav-item" onclick="switchNav('import', event)" data-nav="import" title="Import Routine">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="17 8 12 3 7 8"></polyline>
@@ -1364,16 +1793,16 @@
           <span class="nav-label">Import Routine</span>
         </button>
 
-        <!-- 📡 Dispatch History -->
-        <button class="nav-item" onclick="switchNav('logs', event)" data-nav="logs">
+        <!-- Dispatch History -->
+        <button class="nav-item" onclick="switchNav('logs', event)" data-nav="logs" title="Dispatch History">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
           </svg>
           <span class="nav-label">Dispatch History</span>
         </button>
 
-        <!-- ⚙️ Settings & Bot Config -->
-        <button class="nav-item" onclick="switchNav('settings', event)" data-nav="settings">
+        <!-- Settings & Bot Config -->
+        <button class="nav-item" onclick="switchNav('settings', event)" data-nav="settings" title="Settings & Bot Config">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -1385,15 +1814,15 @@
 
     <!-- Sidebar Footer Controls -->
     <div class="sidebar-footer">
-      <!-- 🌓 Theme Toggle: Dark/Light mode button with dynamic Moon/Sun icon and label -->
-      <button class="nav-item footer-item" id="themeToggleBtn" onclick="toggleTheme(event)">
+      <!-- Theme Toggle: Dark/Light mode button with dynamic Moon/Sun icon and label -->
+      <button class="nav-item footer-item" id="themeToggleBtn" onclick="toggleTheme(event)" title="Toggle Theme (Dark / Light)">
         <svg id="themeIcon" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
         </svg>
         <span id="themeLabel" class="nav-label">Dark Mode</span>
       </button>
 
-      <!-- 🚪 Sign Out: Dispatches POST /api/auth/logout and redirects to /login -->
+      <!-- Sign Out: Dispatches POST /api/auth/logout and redirects to /login -->
       <button class="nav-item footer-item sign-out-item" onclick="handleLogout(event)" title="Sign out of FRIDAY">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -1410,21 +1839,40 @@
     <!-- Topbar in Main Content -->
     <header class="topbar-container">
       <div class="topbar-left">
+        <!-- Toggle View Button -->
+        <button id="topbarToggleBtn" class="topbar-toggle-btn" onclick="toggleSidebarView(event)" title="Toggle navigation view" aria-label="Toggle navigation view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <span style="font-size:0.8rem; font-weight:700;">Menu</span>
+        </button>
+
         <!-- Multi-Tenant Student Switcher -->
         <div class="user-select-wrap" title="Switch active student profile">
-          <span style="font-size:0.9rem;">👤</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;color:var(--nm-text-secondary);flex-shrink:0;">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
           <select id="userProfileSelector" class="user-select" onchange="handleUserSwitch(this.value)">
             <option value="1">Student #1</option>
           </select>
         </div>
 
         <div id="lastSyncBadge" class="last-sync-badge">
-          <span>🔄</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;color:var(--nm-accent-blue);flex-shrink:0;">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
           <span style="color:var(--nm-text-secondary);">Synced:</span>
           <span id="lastSyncText">Loading...</span>
         </div>
         <button id="btnSyncSchedule" class="btn btn-sync" onclick="handleSyncSchedule(event)" title="One-click schedule sync from raw portal data">
-          <span id="syncIcon">⚡</span>
+          <svg id="syncIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0;">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
           <span id="syncText">Sync Schedule</span>
         </button>
       </div>
@@ -1436,7 +1884,7 @@
           <span id="statusText">System Ready</span>
         </div>
         <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="triggerTestPing(event)">
-          ⚡ Test Alert
+          Test Alert
         </button>
       </div>
     </header>
@@ -1444,22 +1892,22 @@
     <!-- TABS NAVIGATION RAIL (Preserved for compatibility & accessibility) -->
     <div class="tabs-nav" style="display:none;" aria-hidden="true">
       <button class="tab-btn active" onclick="switchTab('home', event)">
-        🏠 Home
+        Home
       </button>
       <button class="tab-btn" onclick="switchTab('timetable', event)">
-        📅 Weekly Timetable
+        Weekly Timetable
       </button>
       <button class="tab-btn" onclick="switchTab('deadlines', event)">
-        📝 Academic Deadlines
+        Academic Deadlines
       </button>
       <button class="tab-btn" onclick="switchTab('import', event)">
-        📥 Import Schedule
+        Import Schedule
       </button>
       <button class="tab-btn" onclick="switchTab('logs', event)">
-        📡 Dispatch History
+        Dispatch History
       </button>
       <button class="tab-btn" onclick="switchTab('settings', event)">
-        ⚙️ Settings & Bot Config
+        Settings & Bot Config
       </button>
     </div>
 
@@ -1478,9 +1926,9 @@
           <h3 id="nextClassTitle" class="next-class-title">Checking schedule...</h3>
           <p id="nextClassSubtitle" class="next-class-subtitle">Calculating upcoming classes for today</p>
           <div class="next-class-details" id="nextClassDetails">
-            <div class="nc-detail-pill"><span>📍 Room:</span> <strong id="nextClassRoom">--</strong></div>
-            <div class="nc-detail-pill"><span>⏰ Time:</span> <strong id="nextClassTime">--</strong></div>
-            <div class="nc-detail-pill"><span>👨‍🏫 Faculty:</span> <strong id="nextClassFaculty">--</strong></div>
+            <div class="nc-detail-pill"><span>Room:</span> <strong id="nextClassRoom">--</strong></div>
+            <div class="nc-detail-pill"><span>Time:</span> <strong id="nextClassTime">--</strong></div>
+            <div class="nc-detail-pill"><span>Faculty:</span> <strong id="nextClassFaculty">--</strong></div>
           </div>
         </div>
       </div>
@@ -1531,7 +1979,7 @@
     <!-- TAB 3: INGESTION PORTAL -->
     <div id="tab-import" class="tab-content">
       <div class="import-hero">
-        <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.35rem; color:var(--nm-text);">📥 Your Dashboard — Schedule Ingestion</h2>
+        <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.35rem; color:var(--nm-text);">Your Dashboard — Schedule Ingestion</h2>
         <p style="color:var(--nm-text-muted); font-size:0.92rem; line-height:1.5;">
           Connect your academic course schedule to your Discord account. Run <code style="color:var(--nm-accent-blue); font-family:'JetBrains Mono', monospace; font-weight:700;">/start</code> on Discord with <strong>@FRIDAY</strong> to generate your unique pairing code.
         </p>
@@ -1541,7 +1989,7 @@
       <div class="import-card" style="margin-bottom:1.5rem;">
         <div class="form-group" style="margin-bottom:0;">
           <label class="form-label" style="font-size:0.95rem; font-weight:700; color:var(--nm-text);">
-            🔑 Enter Your Personal Pairing Code
+            Enter Your Personal Pairing Code
           </label>
           <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
             <input type="text" id="importPairingCode" class="form-input" placeholder="e.g. BRC-A7F92B or DEFAULT1" style="font-family:'JetBrains Mono', monospace; font-size:1.1rem; text-transform:uppercase; max-width:320px;" required>
@@ -1555,7 +2003,11 @@
         <!-- Option A: File Upload -->
         <div class="import-card">
           <div class="import-card-header">
-            <div class="import-card-icon">📁</div>
+            <div class="import-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
             <div>
               <h3 style="font-size:1.1rem; font-weight:700; color:var(--nm-text);">Option A: Routine & Schedule Upload</h3>
               <p style="color:var(--nm-text-muted); font-size:0.85rem;">Upload your BRACU advising slip PDF or <code style="color:var(--nm-accent-blue);">schedule_raw.json</code></p>
@@ -1563,7 +2015,13 @@
           </div>
 
           <div id="fileDropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
-            <div style="font-size:2.4rem; margin-bottom:0.5rem;">📄</div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:40px;height:40px;margin-bottom:0.5rem;color:var(--nm-accent-blue);">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
             <div style="font-weight:700; font-size:0.95rem; margin-bottom:0.25rem; color:var(--nm-text);">Click or Drag & Drop Advising PDF or <code style="color:var(--nm-accent-blue);">schedule_raw.json</code> here</div>
             <div style="font-size:0.82rem; color:var(--nm-text-muted);">Supports BRACU Advising Slip PDF & Connect JSON exports</div>
             <input type="file" id="fileInput" accept=".pdf,.json,application/pdf,application/json" style="display:none" onchange="handleFileSelected(event)">
@@ -1574,14 +2032,21 @@
           </div>
 
           <button id="btnUploadSchedule" class="btn" style="justify-content:center; padding:0.75rem;" onclick="handleUploadFile()" disabled>
-            <span>🚀</span> Ingest & Link Schedule
+            Ingest & Link Schedule
           </button>
         </div>
 
         <!-- Option B: Faculty Consultation Schedules -->
         <div class="import-card" style="display:flex; flex-direction:column; gap:1.25rem;">
           <div class="import-card-header">
-            <div class="import-card-icon">👨‍🏫</div>
+            <div class="import-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </div>
             <div>
               <h3 style="font-size:1.1rem; font-weight:700; color:var(--nm-text);">Option B: Faculty Consultation Schedules</h3>
               <p style="color:var(--nm-text-muted); font-size:0.85rem;">Look up office hours or register faculty consultation slots</p>
@@ -1591,7 +2056,7 @@
           <!-- Instant Live Search Bar -->
           <div>
             <label class="form-label" style="font-size:0.85rem; font-weight:700; margin-bottom:0.35rem; color:var(--nm-text);">
-              🔍 Search Faculty Office Hours
+              Search Faculty Office Hours
             </label>
             <div style="display:flex; gap:0.5rem; align-items:center;">
               <input type="text" id="consultationSearchInput" class="form-input" placeholder="Enter faculty initial (e.g. MSI, TSM, SHH)..." style="font-family:'JetBrains Mono', monospace; text-transform:uppercase; font-size:0.95rem;" oninput="handleConsultationSearch(this.value)">
@@ -1609,20 +2074,20 @@
           <!-- Mode Switcher: Multi-Slot Builder vs Batch Paste -->
           <div style="display:flex; gap:0.5rem; margin-top:0.2rem; margin-bottom:0.5rem;">
             <button type="button" id="btnModeForm" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem; box-shadow:var(--nm-inset-sm); color:var(--nm-accent-blue);" onclick="switchConsultMode('form')">
-              📋 Multi-Slot Builder
+              Multi-Slot Builder
             </button>
             <button type="button" id="btnModeBulk" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem;" onclick="switchConsultMode('bulk')">
-              📝 Batch Paste (CSV / Text)
+              Batch Paste (CSV / Text)
             </button>
           </div>
 
           <!-- 1. MULTI-SLOT BUILDER FORM -->
           <div id="consultFormContainer">
             <div style="font-weight:700; font-size:0.95rem; color:var(--nm-text); margin-bottom:0.6rem;">
-              ➕ Multi-Slot Faculty Consultation Builder
+              Multi-Slot Faculty Consultation Builder
             </div>
             <form id="consultationForm" onsubmit="handleSaveConsultation(event)" style="display:flex; flex-direction:column; gap:0.65rem;">
-              <div style="display:grid; grid-template-columns:1fr 1.6fr; gap:0.6rem;">
+              <div class="consult-grid-row-1" style="display:grid; grid-template-columns:1fr 1.6fr; gap:0.6rem;">
                 <div>
                   <label class="form-label" style="font-size:0.78rem; margin-bottom:0.2rem;">Initial *</label>
                   <input type="text" id="consultInitial" class="form-input" placeholder="e.g. MSI" required style="font-family:'JetBrains Mono', monospace; text-transform:uppercase; padding:0.45rem 0.65rem; font-size:0.85rem;">
@@ -1643,7 +2108,7 @@
                 <div id="consultSlotRows" style="display:flex; flex-direction:column; gap:0.6rem;">
                   <!-- Row 1 -->
                   <div class="consult-slot-row" style="background:var(--nm-surface); box-shadow:var(--nm-inset-sm); border-radius:12px; padding:0.65rem; display:flex; flex-direction:column; gap:0.45rem;">
-                    <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.5rem;">
+                    <div class="consult-grid-row-2" style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.5rem;">
                       <div>
                         <select class="form-select consult-row-day" required style="padding:0.4rem 0.5rem; font-size:0.82rem;">
                           <option value="SUNDAY">Sunday</option>
@@ -1662,20 +2127,20 @@
                         <input type="time" class="form-input consult-row-end" required style="padding:0.4rem 0.4rem; font-size:0.82rem;">
                       </div>
                     </div>
-                    <div style="display:grid; grid-template-columns:1fr 1.3fr auto; gap:0.5rem; align-items:center;">
+                    <div class="consult-grid-row-3" style="display:grid; grid-template-columns:1fr 1.3fr auto; gap:0.5rem; align-items:center;">
                       <input type="text" class="form-input consult-row-room" placeholder="Room (e.g. UB0821)" style="padding:0.4rem 0.5rem; font-size:0.82rem;">
                       <input type="url" class="form-input consult-row-link" placeholder="Link (e.g. https://meet...)" style="padding:0.4rem 0.5rem; font-size:0.82rem;">
-                      <button type="button" class="btn btn-secondary" style="padding:0.35rem 0.6rem; color:var(--nm-accent-rose); font-size:0.8rem;" onclick="removeConsultRow(this)" title="Remove slot">✕</button>
+                      <button type="button" class="btn btn-secondary" style="padding:0.35rem 0.6rem; color:var(--nm-accent-rose); font-size:0.8rem;" onclick="removeConsultRow(this)" title="Remove slot">&times;</button>
                     </div>
                   </div>
                 </div>
                 <button type="button" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem; margin-top:0.5rem; width:100%; justify-content:center;" onclick="addConsultRow()">
-                  ➕ Add Another Time Slot
+                  + Add Another Time Slot
                 </button>
               </div>
 
               <button type="submit" id="btnSaveConsultation" class="btn" style="justify-content:center; padding:0.6rem; margin-top:0.4rem;">
-                💾 Save All Consultation Slots
+                Save All Consultation Slots
               </button>
             </form>
           </div>
@@ -1683,7 +2148,7 @@
           <!-- 2. BULK TEXTAREA INPUT -->
           <div id="consultBulkContainer" style="display:none;">
             <div style="font-weight:700; font-size:0.95rem; color:var(--nm-text); margin-bottom:0.4rem;">
-              📝 Batch Paste Faculty Consultations
+              Batch Paste Faculty Consultations
             </div>
             <p style="font-size:0.8rem; color:var(--nm-text-muted); margin-bottom:0.5rem; line-height:1.4;">
               Paste multi-line entries (one per line). Format:<br>
@@ -1691,7 +2156,7 @@
             </p>
             <textarea id="consultBulkText" class="form-input" rows="6" style="font-family:'JetBrains Mono', monospace; font-size:0.85rem; padding:0.6rem; width:100%; margin-bottom:0.6rem;" placeholder="MSI, Dr. Muhammad S. Islam, Sunday, 10:00 AM, 11:30 AM, UB0802&#10;MSI, Dr. Muhammad S. Islam, Tuesday, 02:00 PM, 03:30 PM, UB0802&#10;AAN, Abdullah An-Noor, Monday, 11:00 AM, 01:00 PM, UB0704"></textarea>
             <button type="button" id="btnSaveBulkConsultation" class="btn" style="justify-content:center; padding:0.6rem; width:100%;" onclick="handleSaveBulkConsultation()">
-              ⚡ Batch Import Consultation Slots
+              Batch Import Consultation Slots
             </button>
           </div>
         </div>
@@ -1700,7 +2165,10 @@
       <!-- Import Feedback Card -->
       <div id="importFeedbackCard" style="display:none; background:var(--nm-surface); box-shadow:var(--nm-extruded); border-radius:20px; border:1px solid var(--nm-border-light); padding:1.5rem 2rem;">
         <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
-          <span style="font-size:1.5rem;">🎉</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;color:var(--nm-accent-green);flex-shrink:0;">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
           <h3 id="importFeedbackTitle" style="font-size:1.15rem; font-weight:700; color:var(--nm-accent-green);">Schedule Ingested Successfully!</h3>
         </div>
         <p id="importFeedbackMsg" style="color:var(--nm-text); font-size:0.9rem; line-height:1.6; margin-bottom:1rem;"></p>
@@ -1733,7 +2201,7 @@
         <!-- Discord Notification Settings -->
         <div class="settings-card" style="background:var(--nm-surface); border-radius:24px; box-shadow:var(--nm-extruded-lg); border:1px solid var(--nm-border-light); padding:2rem;">
           <div class="settings-card-header" style="margin-bottom:1.5rem;">
-            <h3 class="settings-card-title" style="font-size:1.15rem; font-weight:700; margin-bottom:0.3rem; color:var(--nm-text);">🤖 Discord DM Notification Profile</h3>
+            <h3 class="settings-card-title" style="font-size:1.15rem; font-weight:700; margin-bottom:0.3rem; color:var(--nm-text);">Discord DM Notification Profile</h3>
             <p class="settings-card-desc" style="color:var(--nm-text-muted); font-size:0.875rem;">Configure your Discord account so FRIDAY can deliver personalized class routines and exam alarms directly to your DMs.</p>
           </div>
           <form id="settingsForm" onsubmit="handleSaveSettings(event)">
@@ -1804,10 +2272,10 @@
   <!-- EDIT CONSULTATION MODAL -->
   <div id="editConsultationModal" class="modal-overlay">
     <div class="modal-box">
-      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem; color:var(--nm-text);">✏️ Edit Faculty Consultation Slot</h3>
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem; color:var(--nm-text);">Edit Faculty Consultation Slot</h3>
       <form id="editConsultationForm" onsubmit="handleUpdateConsultation(event)">
         <input type="hidden" id="editConsultId" value="">
-        <div style="display:grid; grid-template-columns:1fr 1.6fr; gap:0.75rem; margin-bottom:1rem;">
+        <div class="consult-grid-row-1" style="display:grid; grid-template-columns:1fr 1.6fr; gap:0.75rem; margin-bottom:1rem;">
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Faculty Initial *</label>
             <input type="text" class="form-input" id="editConsultInitial" required placeholder="e.g. MSI" style="font-family:'JetBrains Mono', monospace; text-transform:uppercase;">
@@ -1823,7 +2291,7 @@
           <input type="email" class="form-input" id="editConsultEmail" placeholder="e.g. faculty@bracu.ac.bd">
         </div>
 
-        <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+        <div class="consult-grid-row-2" style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Day of Week *</label>
             <select class="form-select" id="editConsultDay" required>
@@ -1856,8 +2324,8 @@
           <input type="url" class="form-input" id="editConsultLink" placeholder="e.g. https://meet.google.com/...">
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
-          <button type="button" class="btn btn-secondary" style="color:var(--nm-accent-rose);" onclick="handleDeleteConsultationFromModal()">🗑️ Delete Slot</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; flex-wrap:wrap; gap:0.75rem;">
+          <button type="button" class="btn btn-secondary" style="color:var(--nm-accent-rose);" onclick="handleDeleteConsultationFromModal()">Delete Slot</button>
           <div style="display:flex; gap:0.75rem;">
             <button type="button" class="btn btn-secondary" onclick="closeEditConsultationModal()">Cancel</button>
             <button type="submit" class="btn" id="editConsultSubmitBtn">Save Changes</button>
@@ -1942,7 +2410,10 @@
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
-      toast.innerHTML = `<span>${type === 'success' ? '✅' : '⚠️'}</span><span>${message}</span>`;
+      const iconSvg = type === 'success'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;color:var(--nm-accent-green);flex-shrink:0;"><polyline points="20 6 9 17 4 12"></polyline></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;color:var(--nm-accent-rose);flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+      toast.innerHTML = `<span>${iconSvg}</span><span>${message}</span>`;
       container.appendChild(toast);
       setTimeout(() => {
         toast.style.opacity = '0';
@@ -1950,8 +2421,52 @@
       }, 3500);
     }
 
+    // Toggle view option: Toggles between icon-only collapsed sidebar and expanded sidebar on desktop,
+    // and opens/closes the mobile drawer on small screens.
+    function toggleSidebarView(e) {
+      if (e) e.preventDefault();
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        const isOpen = document.body.classList.toggle('sidebar-mobile-open');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (backdrop) backdrop.style.display = isOpen ? 'block' : 'none';
+      } else {
+        const isExpanded = document.body.classList.toggle('sidebar-expanded');
+        localStorage.setItem('friday_sidebar_expanded', isExpanded ? 'true' : 'false');
+      }
+    }
+
+    function closeSidebarMobile() {
+      document.body.classList.remove('sidebar-mobile-open');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (backdrop) backdrop.style.display = 'none';
+    }
+
+    function initSidebar() {
+      const isMobile = window.innerWidth <= 768;
+      if (!isMobile) {
+        const savedExpanded = localStorage.getItem('friday_sidebar_expanded');
+        if (savedExpanded === 'true') {
+          document.body.classList.add('sidebar-expanded');
+        } else {
+          document.body.classList.remove('sidebar-expanded');
+        }
+      }
+    }
+    initSidebar();
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 768) {
+        closeSidebarMobile();
+      }
+    });
+
     // Sidebar & Tab Navigation
     function switchNav(navId, ev) {
+      // Auto-close mobile drawer when navigation item is clicked
+      if (window.innerWidth <= 768) {
+        closeSidebarMobile();
+      }
+
       // Update sidebar nav items
       document.querySelectorAll('.nm-sidebar .nav-item').forEach(btn => {
         if (!btn.classList.contains('footer-item')) {
@@ -2023,7 +2538,7 @@
 
       if (upcomingSlot) {
         titleEl.textContent = `${upcomingSlot.code} (Sec ${upcomingSlot.section})`;
-        subtitleEl.textContent = isOngoing ? '⚡ Class in session right now' : `Next scheduled class today (${dayNameDhaka})`;
+        subtitleEl.textContent = isOngoing ? 'Class in session right now' : `Next scheduled class today (${dayNameDhaka})`;
         countdownEl.textContent = isOngoing ? 'HAPPENING NOW' : 'UPCOMING TODAY';
         roomEl.textContent = upcomingSlot.room || 'TBA';
         timeEl.textContent = `${upcomingSlot.start_time.substring(0, 5)} - ${upcomingSlot.end_time.substring(0, 5)}`;
@@ -2249,7 +2764,6 @@
 
       btn.disabled = true;
       icon.classList.add('spin');
-      icon.textContent = '🔄';
       text.textContent = 'Syncing...';
 
       try {
@@ -2278,7 +2792,6 @@
       } finally {
         btn.disabled = false;
         icon.classList.remove('spin');
-        icon.textContent = '⚡';
         text.textContent = 'Sync Schedule';
       }
     }
@@ -2377,8 +2890,8 @@
                     </div>
                     <div class="slot-code">${s.code} <span style="font-size:0.8rem; font-weight:600; color:var(--nm-text-muted);">(Sec ${s.section})</span></div>
                     <div class="slot-meta">
-                      <div class="meta-row"><span>📍 Room:</span> <strong style="color:var(--nm-text);">${s.room || 'TBA'}</strong></div>
-                      <div class="meta-row"><span>👨‍🏫 Faculty:</span> <span>${s.faculty || 'N/A'}</span></div>
+                      <div class="meta-row"><span>Room:</span> <strong style="color:var(--nm-text);">${s.room || 'TBA'}</strong></div>
+                      <div class="meta-row"><span>Faculty:</span> <span>${s.faculty || 'N/A'}</span></div>
                     </div>
                   </div>
                 `;
@@ -2469,19 +2982,19 @@
             const actionButtons = ev.is_custom ? `
               <div class="action-btn-group">
                 <button class="btn-action btn-test-alert" title="Dispatch test alert to Discord" onclick="handleTestEventAlert(${ev.id}, '${ev.title.replace(/'/g, "\\'")}')">
-                  🔔 Test
+                  Test
                 </button>
                 <button class="btn-action" title="Edit Deadline" onclick='openEditEventModal(${JSON.stringify(ev)})'>
-                  ✏️ Edit
+                  Edit
                 </button>
                 <button class="btn-action btn-delete" title="Delete Deadline" onclick="handleDeleteEvent(${ev.id}, '${ev.title.replace(/'/g, "\\'")}')">
-                  🗑️
+                  Delete
                 </button>
               </div>
             ` : `
               <div class="action-btn-group">
                 <button class="btn-action btn-test-alert" title="Dispatch test alert to Discord" onclick="handleTestEventAlert(${ev.id}, '${ev.title.replace(/'/g, "\\'")}')">
-                  🔔 Test
+                  Test
                 </button>
               </div>
             `;
@@ -2493,9 +3006,9 @@
                   <div>
                     <div class="event-title">${ev.title}</div>
                     <div class="event-sub">
-                      <span>🗓️ ${dateFmt} at ${timeFmt}</span>
-                      <span>📍 ${ev.room || 'TBA'}</span>
-                      ${ev.course_code ? `<span>📘 ${ev.course_code}</span>` : ''}
+                      <span>${dateFmt} at ${timeFmt}</span>
+                      <span>Room: ${ev.room || 'TBA'}</span>
+                      ${ev.course_code ? `<span>${ev.course_code}</span>` : ''}
                     </div>
                   </div>
                 </div>
@@ -2824,13 +3337,13 @@
             showToast('Please enter your Pairing Code first!', 'error');
             document.getElementById('importPairingCode').focus();
             btn.disabled = false;
-            btn.innerHTML = '<span>🚀</span> Ingest & Link Schedule';
+            btn.innerHTML = 'Ingest & Link Schedule';
             return;
           }
           if (!selectedFileContent) {
             showToast('Please select or drop a valid schedule JSON file.', 'error');
             btn.disabled = false;
-            btn.innerHTML = '<span>🚀</span> Ingest & Link Schedule';
+            btn.innerHTML = 'Ingest & Link Schedule';
             return;
           }
 
@@ -2873,7 +3386,7 @@
         showToast('Import error: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<span>🚀</span> Ingest & Link Schedule';
+        btn.innerHTML = 'Ingest & Link Schedule';
       }
     }
 
@@ -2886,8 +3399,8 @@
       const coursesStr = (data.courses || []).map(c => `• ${c.code} (Section ${c.section}) - Room ${c.room || 'TBA'}`).join('\n') || 'Courses imported';
 
       msg.innerHTML = `
-        ✅ Imported <strong>${json.courses_count || data.courses?.length || 0}</strong> courses, <strong>${json.schedules_count || data.schedules?.length || 0}</strong> weekly class/lab routine slots, and <strong>${json.events_count || data.events?.length || 0}</strong> university exam schedules.<br>
-        ${json.dm_sent ? '📬 <strong>A welcoming confirmation DM has been sent to your Discord account!</strong>' : 'ℹ️ Linked to your account.'}
+        Imported <strong>${json.courses_count || data.courses?.length || 0}</strong> courses, <strong>${json.schedules_count || data.schedules?.length || 0}</strong> weekly class/lab routine slots, and <strong>${json.events_count || data.events?.length || 0}</strong> university exam schedules.<br>
+        ${json.dm_sent ? '<strong>A welcoming confirmation DM has been sent to your Discord account!</strong>' : 'Linked to your account.'}
       `;
 
       details.innerHTML = `User ID: #${json.user_id}\n\nEnrolled Routine:\n${coursesStr}`;
@@ -2903,8 +3416,8 @@
       const coursesStr = data.importedCourses.map(c => `• ${c.code} (Section ${c.section}) - ${c.faculty || 'Faculty TBA'} - Room ${c.room || 'TBA'}`).join('\n');
 
       msg.innerHTML = `
-        ✅ Imported <strong>${data.coursesInserted}</strong> courses, <strong>${data.routineSlotsInserted}</strong> weekly class routine slots, and <strong>${data.eventsInserted}</strong> university exam schedules.<br>
-        ${json.dm_sent ? '📬 <strong>A welcoming confirmation DM has been sent to your Discord account!</strong>' : 'ℹ️ Linked to your account. (Ensure your Discord bot is running to receive live DMs).'}
+        Imported <strong>${data.coursesInserted}</strong> courses, <strong>${data.routineSlotsInserted}</strong> weekly class routine slots, and <strong>${data.eventsInserted}</strong> university exam schedules.<br>
+        ${json.dm_sent ? '<strong>A welcoming confirmation DM has been sent to your Discord account!</strong>' : 'Linked to your account. (Ensure your Discord bot is running to receive live DMs).'}
       `;
 
       details.innerHTML = `User ID: #${json.user_id} | Discord Snowflake: ${json.discord_user_id}\n\nEnrolled Routine:\n${coursesStr}`;
@@ -2944,9 +3457,9 @@
                     <span style="color:var(--nm-text-muted); margin-left:0.4rem;">${slot.start_time.substring(0,5)} - ${slot.end_time.substring(0,5)}</span>
                   </div>
                   <div style="display:flex; gap:0.4rem; align-items:center;">
-                    ${slot.room ? `<span style="box-shadow:var(--nm-inset-sm); color:var(--nm-accent-blue); padding:0.2rem 0.5rem; border-radius:9999px; font-size:0.75rem; font-weight:700;">📍 ${slot.room}</span>` : ''}
-                    ${slot.consultation_link ? `<a href="${slot.consultation_link}" target="_blank" style="color:var(--nm-accent-green); font-size:0.78rem; text-decoration:none; font-weight:600;">🔗 Join Link</a>` : ''}
-                    <button type="button" class="btn-action" style="padding:0.2rem 0.55rem; font-size:0.75rem; color:var(--nm-accent-blue);" onclick="openEditConsultationModal(${slot.id})" title="Edit Slot">✏️ Edit</button>
+                    ${slot.room ? `<span style="box-shadow:var(--nm-inset-sm); color:var(--nm-accent-blue); padding:0.2rem 0.5rem; border-radius:9999px; font-size:0.75rem; font-weight:700;">${slot.room}</span>` : ''}
+                    ${slot.consultation_link ? `<a href="${slot.consultation_link}" target="_blank" style="color:var(--nm-accent-green); font-size:0.78rem; text-decoration:none; font-weight:600;">Join Link</a>` : ''}
+                    <button type="button" class="btn-action" style="padding:0.2rem 0.55rem; font-size:0.75rem; color:var(--nm-accent-blue);" onclick="openEditConsultationModal(${slot.id})" title="Edit Slot">Edit</button>
                   </div>
                 </div>
               `).join('')}
@@ -2957,7 +3470,7 @@
           window.lastConsultationSlots = [];
           container.innerHTML = `
             <div style="text-align:center; padding:0.75rem; color:var(--nm-text-muted); font-size:0.85rem;">
-              🔍 No consultation hours registered for <strong>${initial}</strong> yet.<br>
+              No consultation hours registered for <strong>${initial}</strong> yet.<br>
               <span style="font-size:0.78rem;">Use the form below to add their consultation schedule!</span>
             </div>
           `;
@@ -3094,7 +3607,7 @@
       row.className = 'consult-slot-row';
       row.style = 'background:var(--nm-surface); box-shadow:var(--nm-inset-sm); border-radius:12px; padding:0.65rem; display:flex; flex-direction:column; gap:0.45rem;';
       row.innerHTML = `
-        <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.5rem;">
+        <div class="consult-grid-row-2" style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:0.5rem;">
           <div>
             <select class="form-select consult-row-day" required style="padding:0.4rem 0.5rem; font-size:0.82rem;">
               <option value="SUNDAY">Sunday</option>
@@ -3113,10 +3626,10 @@
             <input type="time" class="form-input consult-row-end" required style="padding:0.4rem 0.4rem; font-size:0.82rem;">
           </div>
         </div>
-        <div style="display:grid; grid-template-columns:1fr 1.3fr auto; gap:0.5rem; align-items:center;">
+        <div class="consult-grid-row-3" style="display:grid; grid-template-columns:1fr 1.3fr auto; gap:0.5rem; align-items:center;">
           <input type="text" class="form-input consult-row-room" placeholder="Room (e.g. UB0821)" style="padding:0.4rem 0.5rem; font-size:0.82rem;">
           <input type="url" class="form-input consult-row-link" placeholder="Link (e.g. https://meet...)" style="padding:0.4rem 0.5rem; font-size:0.82rem;">
-          <button type="button" class="btn btn-secondary" style="padding:0.35rem 0.6rem; color:var(--nm-accent-rose); font-size:0.8rem;" onclick="removeConsultRow(this)" title="Remove slot">✕</button>
+          <button type="button" class="btn btn-secondary" style="padding:0.35rem 0.6rem; color:var(--nm-accent-rose); font-size:0.8rem;" onclick="removeConsultRow(this)" title="Remove slot">&times;</button>
         </div>
       `;
       container.appendChild(row);
@@ -3169,7 +3682,7 @@
 
       const btn = document.getElementById('btnSaveConsultation');
       btn.disabled = true;
-      btn.textContent = '⏳ Saving...';
+      btn.textContent = 'Saving...';
 
       try {
         const res = await fetch('/api/consultations/bulk', {
@@ -3190,7 +3703,7 @@
         showToast('Error saving consultation: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = '💾 Save All Consultation Slots';
+        btn.textContent = 'Save All Consultation Slots';
       }
     }
 
@@ -3203,7 +3716,7 @@
 
       const btn = document.getElementById('btnSaveBulkConsultation');
       btn.disabled = true;
-      btn.textContent = '⏳ Processing Bulk Import...';
+      btn.textContent = 'Processing Bulk Import...';
 
       try {
         const res = await fetch('/api/consultations/bulk', {
@@ -3228,7 +3741,7 @@
         showToast('Error importing bulk consultations: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = '⚡ Batch Import Consultation Slots';
+        btn.textContent = 'Batch Import Consultation Slots';
       }
     }
 
