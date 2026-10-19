@@ -646,16 +646,6 @@
       color: var(--nm-text-primary);
     }
 
-    /* QUICK ACTIONS */
-    .quick-actions-card {
-      background: var(--nm-surface);
-      border-radius: 24px;
-      box-shadow: var(--nm-shadow-out);
-      border: 1px solid var(--nm-border);
-      padding: 1.75rem 2rem;
-      margin-top: 1.5rem;
-    }
-
     /* DARK MODE STYLES & OVERRIDES */
     body.dark-mode .form-input,
     body.dark-mode .form-select,
@@ -1473,7 +1463,7 @@
       </button>
     </div>
 
-    <!-- TAB 0: HOME (OVERVIEW STATS, NEXT UPCOMING CLASS ALERT, QUICK ACTIONS) -->
+    <!-- TAB 0: HOME (OVERVIEW STATS, NEXT UPCOMING CLASS ALERT) -->
     <div id="tab-home" class="tab-content active">
       <!-- Next Upcoming Class Alert Card -->
       <div id="nextClassAlertCard" class="next-class-card">
@@ -1512,18 +1502,6 @@
         <div class="metric-card">
           <span class="metric-label">Discord Alerts Sent</span>
           <span id="metricLogs" class="metric-value">--</span>
-        </div>
-      </div>
-
-      <!-- QUICK ACTIONS -->
-      <div class="quick-actions-card">
-        <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1.15rem; color: var(--nm-text-primary);">⚡ Quick Actions</h3>
-        <div style="display: flex; gap: 0.85rem; flex-wrap: wrap;">
-          <button class="btn" onclick="switchNav('timetable')">📅 View Weekly Timetable</button>
-          <button class="btn" onclick="openAddEventModal()">🎯 Add Academic Deadline</button>
-          <button class="btn" onclick="switchNav('import')">📤 Import Routine PDF</button>
-          <button class="btn btn-secondary" onclick="handleSyncSchedule(event)">🔄 Sync Schedule</button>
-          <button class="btn btn-secondary" onclick="triggerTestPing(event)">⚡ Send Test Alert</button>
         </div>
       </div>
     </div>

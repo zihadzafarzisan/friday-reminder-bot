@@ -119,13 +119,13 @@ it('renders navigation links for Home, Weekly Timetable, Academic Deadlines, and
   assert.ok(indexHtml.includes('switchNav(\'import\'') || indexHtml.includes('switchNav("import"'));
 });
 
-it('renders Home view with overview stats, next upcoming class alert, and quick actions', () => {
+it('renders Home view with overview stats and next upcoming class alert (quick actions removed)', () => {
   assert.ok(indexHtml.includes('tab-home'));
   assert.ok(indexHtml.includes('nextClassAlertCard'));
   assert.ok(indexHtml.includes('nextClassTitle'));
   assert.ok(indexHtml.includes('nextClassCountdown'));
   assert.ok(indexHtml.includes('metrics-grid'));
-  assert.ok(indexHtml.includes('quick-actions-card') || indexHtml.includes('Quick Actions'));
+  assert.ok(!indexHtml.includes('quick-actions-card'));
 });
 
 it('renders Sidebar Footer with Theme Toggle and Sign Out buttons', () => {
